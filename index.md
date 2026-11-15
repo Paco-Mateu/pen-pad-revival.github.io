@@ -146,6 +146,17 @@ The transcripts on the part pages were machine-assisted and then proofread, and 
   * [opengalen.org frozen copy via archive.org](https://web.archive.org/web/20220308122743/https://opengalen.org/)
 * An [OpenGALEN 8 browser](opengalen-browser/) for the published hierarchy is on this site ([source on GitHub](https://github.com/erik-sundvalls-bots/opengalen-browser), including the [GALEN sources](https://github.com/erik-sundvalls-bots/opengalen-browser/tree/main/sources)). To suggest an improvement or a feature, see [Suggest improvement/feature](https://github.com/erik-sundvalls-bots/opengalen-browser/issues) or [open one](https://github.com/erik-sundvalls-bots/opengalen-browser/issues/new).
 
+## Clinergy
+Clinergy was a structured data entry system for primary care built on the PEN&PAD approach, "built on top of a live GALEN terminology server delivering an adaptation of a GALEN Common Reference Model" ([OpenGALEN software page](https://opengalen.eggbird.eu/sources/software.html)). Alan Rector demonstrates it in [interview part 1](interviews/alan-rector-part-1/#t=685), and the [thumb pain walkthrough](docs/clinergy-thumb-pain-demo/) goes through that demo screen by screen.
+
+* **Demo download:** [ClinergyDemo.zip](https://opengalen.eggbird.eu/download/ClinergyDemo.zip) (6 MB, a 1998 Windows installer) from the OpenGALEN mirror. There is also a [copy archived from opengalen.org](https://web.archive.org/web/20070818150258/http://www.opengalen.org/download/clinergydemo.zip). The demo is © 1997-8 Semantic Technologies Ltd / Victoria University of Manchester, All Rights Reserved.
+* **Extractor:** [clinergy-extractor](https://github.com/erik-sundvalls-bots/clinergy-extractor) turns your copy of the zip into human-readable YAML: one file per data-entry form, plus concepts, examinations, summary-sentence rules and body maps. It can also suggest OpenGALEN 8 names for Clinergy concepts. It needs [Deno](https://deno.com/), Wine and the 32-bit MinGW compiler (details in its README):
+  ```sh
+  git clone https://github.com/erik-sundvalls-bots/clinergy-extractor && cd clinergy-extractor
+  deno task extract ClinergyDemo.zip out/
+  ```
+  The output is a private study copy. Please don't publish it.
+
 ## Snomed CT Expo 2021 talk
 * At [SNOMED CT Expo 2021](https://www.snomed.org/news-and-events/events/snomedct-expo) Daniel Karlsson and Erik Sundvall presented the PEN & PAD inspired talk "Context-aware interactive use of SNOMED CT and terminology services in openEHR-based electronic health records"
     * Slides: [https://docs.google.com/presentation/d/1BQxf-2NGhoFjlYEdRCdNoBWtUAS1qpn0/edit?usp=sharing&ouid=112660550613841635682&rtpof=true&sd=true](https://docs.google.com/presentation/d/1BQxf-2NGhoFjlYEdRCdNoBWtUAS1qpn0/edit?usp=sharing&ouid=112660550613841635682&rtpof=true&sd=true) 
