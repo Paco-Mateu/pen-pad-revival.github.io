@@ -11,7 +11,9 @@
   }
   document.getElementById("about-btn").addEventListener("click", openAbout);
   about.addEventListener("close", () => { if (model) draw(); });
-  openAbout();
+  // A permalink or query that already names a concept skips the automatic
+  // About dialog. A plain visit still opens it. The About button always can.
+  if (!requestedName()) openAbout();
 
   function setPanelOpen(open) {
     panelEl.classList.toggle("is-collapsed", !open);
@@ -35,7 +37,7 @@
   const suggest = document.getElementById("suggest");
   const panel = document.getElementById("panel-body");
   const tip = document.getElementById("tip");
-  const state = { showGen: true, siblings: false, children: true, ancestorsOnly: false, labels: true, clustering: true, marking: true, expanded: new Set(), childExtra: 0, focus: 0, rels: new Set(), relEdges: [] };
+  const state = { showGen: true, siblings: false, children: true, ancestorsOnly: false, labels: true, clustering: true, marking: true, expanded: new Set(), childExtra: 0, focus: 0, rels: new Set(), relEdges: [], relOn: false, relReady: false, quals: new Set(), qualEdges: [], qualOn: false, qualReady: false };
   let model = null;
   let activeSuggest = -1;
   let panelToken = 0;
@@ -45,13 +47,29 @@
   let tipTimer = 0;
   const tipBody = document.getElementById("tip-body");
   let focusRels = [];
+  let focusQuals = [];
   let relToken = 0;
 
   function setStatus(text) { status.textContent = text || ""; }
 
   function hashName() {
     const match = /^#concept=(.*)$/.exec(location.hash);
-    return match ? decodeURIComponent(match[1]) : "";
+    if (!match || !match[1]) return "";
+    try { return decodeURIComponent(match[1]); } catch (err) { return match[1]; }
+  }
+
+  function queryName() {
+    try {
+      const value = new URLSearchParams(location.search).get("concept");
+      return value ? String(value).trim() : "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  /* Hash #concept=Name wins; otherwise ?concept=Name. Empty means a plain visit. */
+  function requestedName() {
+    return hashName() || queryName();
   }
 
   function go(name, push) {
@@ -71,12 +89,22 @@
     if (state.focus !== id) {
       state.expanded = new Set();
       state.childExtra = 0;
+      state.rels = new Set();
+      state.quals = new Set();
+      state.relOn = false;
+      state.qualOn = false;
+      state.relReady = false;
+      state.qualReady = false;
+      focusRels = [];
+      focusQuals = [];
     }
     hideTip();
     hideInfo();
     state.focus = id;
     state.relEdges = [];
-    document.title = name + " · OpenGALEN 8";
+    state.qualEdges = [];
+    if (!state.qualReady) focusQuals = [];
+    document.title = OG.groupHeading(model.graph, id) + " · OpenGALEN 8";
     draw();
     fillPanel(id);
     loadFocusRels(id);
@@ -84,11 +112,27 @@
 
   async function loadFocusRels(id) {
     const token = ++relToken;
-    let rows = [];
-    try { rows = await OG.loadRels(model, id); } catch (err) { rows = []; }
+    const members = OG.equivMembers(model.graph, id);
+    const rows = [];
+    const seen = new Set();
+    for (const mid of members) {
+      let part = [];
+      try { part = await OG.loadRels(model, mid); } catch (err) { part = []; }
+      for (const edge of part) {
+        const key = edge.prop + ":" + model.graph.canon[edge.target];
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push(edge);
+      }
+    }
     if (token !== relToken || state.focus !== id) return;
     focusRels = rows;
-    state.relEdges = rows.filter((edge) => state.rels.has(edge.prop));
+    if (!state.relReady) {
+      state.rels = new Set(OG.defaultEdgeKeys(rows));
+      state.relOn = false;
+      state.relReady = true;
+    }
+    state.relEdges = state.relOn ? rows.filter((edge) => state.rels.has(OG.edgeKey(edge))) : [];
     draw();
     paintRelSection();
     recolorPanel();
@@ -102,9 +146,11 @@
       const g = model.graph;
       const hiddenKids = lastView.childHidden;
       setStatus(
-        OG.spaced(g.names[state.focus])
+        OG.spaced(OG.groupHeading(g, state.focus))
         + " · " + lastView.ancestorCount + " ancestors"
         + (state.ancestorsOnly ? " · ancestors only" : state.children === false ? " · children hidden" : hiddenKids ? " · " + hiddenKids + " generated children hidden" : "")
+        + (state.relOn && state.relEdges.length ? " · " + state.relEdges.length + " relationship" + (state.relEdges.length === 1 ? "" : "s") : "")
+        + (state.qualOn && state.qualEdges.length ? " · " + state.qualEdges.length + " sanction" + (state.qualEdges.length === 1 ? "" : "s") : "")
       );
     } catch (err) {
       setStatus("Could not lay out this neighbourhood. " + err.message);
@@ -163,7 +209,7 @@
         if (event.pointerType && event.pointerType !== "mouse") return;
         tip.classList.remove("is-touch");
         const target = model.graph.names[rel.targetId];
-        tipBody.innerHTML = "<b>" + escapeHtml(rel.prop) + "</b> → " + escapeHtml(OG.spaced(target));
+        tipBody.innerHTML = "<b>" + escapeHtml(edgeLabel(rel)) + "</b> → " + escapeHtml(OG.spaced(target));
         tip.hidden = false;
         moveTip(event);
       })
@@ -174,7 +220,7 @@
         if (pointerKind !== "mouse" && previewKey !== "rel:" + rel.prop + ":" + rel.targetId) {
           previewKey = "rel:" + rel.prop + ":" + rel.targetId;
           tip.classList.add("is-touch");
-          tipBody.innerHTML = "<b>" + escapeHtml(rel.prop) + "</b> → " + escapeHtml(OG.spaced(model.graph.names[rel.targetId]));
+          tipBody.innerHTML = "<b>" + escapeHtml(edgeLabel(rel)) + "</b> → " + escapeHtml(OG.spaced(model.graph.names[rel.targetId]));
           tip.hidden = false;
           moveTip(event);
           clearTimeout(tipTimer);
@@ -223,7 +269,7 @@
     if (node.kind === "cluster") return "+" + node.members.length;
     if (node.kind === "more") return "+" + node.count + " more";
     if (node.kind !== "concept") return "";
-    return OG.spaced(model.graph.names[node.concept]);
+    return OG.spaced(OG.nodeLabel(model.graph, node.concept, state.focus));
   }
 
   function neighbourhood(d, view, up, down) {
@@ -245,11 +291,11 @@
       children.push(name);
       labelKeys.add(key);
     }
-    for (const rel of view.relLinks || []) {
+    for (const rel of [...(view.relLinks || []), ...(view.qualLinks || [])]) {
       if (rel.source !== d.key) continue;
       const name = drawnName(view, rel.target);
       if (!name) continue;
-      rels.push(rel.prop + " → " + name);
+      rels.push((rel.kind === "qual" ? "sanction " : "") + rel.prop + " → " + name);
       labelKeys.add(rel.target);
     }
     return { parents, children, rels, labelKeys };
@@ -262,7 +308,7 @@
     d3.select("#g").selectAll(".node").each(function (node) {
       if (!near.labelKeys.has(node.key) || node.kind !== "concept") return;
       if (node.lines && node.lines.length) return;
-      const name = OG.spaced(model.graph.names[node.concept]);
+      const name = OG.spaced(OG.nodeLabel(model.graph, node.concept, state.focus));
       const cut = name.length > 22 ? name.lastIndexOf(" ", 22) : -1;
       const parts = cut > 8 ? [name.slice(0, cut).trim(), name.slice(cut + 1).trim()] : [name];
       const text = d3.select(this).append("text")
@@ -310,7 +356,7 @@
       return "<b>+" + d.members.length + "</b> " + names.join(", ") + more;
     }
     if (d.kind === "more") return "+" + d.count + " children";
-    const title = "<b>" + escapeHtml(OG.spaced(model.graph.names[d.concept])) + "</b>";
+    const title = "<b>" + escapeHtml(OG.spaced(OG.nodeLabel(model.graph, d.concept, state.focus))) + "</b>";
     if (state.labels) return title;
     const near = neighbourhood(d, view, up, down);
     const rows = [title];
@@ -432,6 +478,105 @@
     if (grail && grail.dataset.raw) paintColored(grail, grail.dataset.raw);
   }
 
+  function shownCountText(selected, total) {
+    return "shown " + selected + " of " + total;
+  }
+
+  function updatePickCount(kind) {
+    const edges = kind === "rel" ? focusRels : focusQuals;
+    const selected = kind === "rel" ? state.rels : state.quals;
+    const el = document.getElementById(kind + "-count");
+    if (el) el.textContent = shownCountText(selected.size, edges.length);
+  }
+
+  function syncPickChecks(kind) {
+    const selected = kind === "rel" ? state.rels : state.quals;
+    const list = document.getElementById(kind + "-list");
+    if (!list) return;
+    list.querySelectorAll("input[type=checkbox]").forEach((box) => {
+      box.checked = selected.has(box.dataset.key);
+    });
+    updatePickCount(kind);
+  }
+
+  function selectedDrawnEdges(edges, selected, on) {
+    if (!on) return [];
+    return edges.filter((edge) => selected.has(OG.edgeKey(edge)));
+  }
+
+  function makeAllNone(kind) {
+    const actions = document.createElement("div");
+    actions.className = "rel-actions";
+    const all = document.createElement("button");
+    all.type = "button";
+    all.textContent = "All";
+    const none = document.createElement("button");
+    none.type = "button";
+    none.textContent = "None";
+    const count = document.createElement("p");
+    count.id = kind + "-count";
+    count.className = "rel-count";
+    all.addEventListener("click", () => {
+      const edges = kind === "rel" ? focusRels : focusQuals;
+      const keys = new Set(edges.map((edge) => OG.edgeKey(edge)));
+      if (kind === "rel") { state.rels = keys; state.relOn = keys.size > 0; }
+      else { state.quals = keys; state.qualOn = keys.size > 0; }
+      if (kind === "rel") applyRelSelection();
+      else applyQualSelection();
+    });
+    none.addEventListener("click", () => {
+      if (kind === "rel") { state.rels = new Set(); state.relOn = false; applyRelSelection(); }
+      else { state.quals = new Set(); state.qualOn = false; applyQualSelection(); }
+    });
+    actions.append(all, none, count);
+    return actions;
+  }
+
+  function makePickRow(kind, edge, g) {
+    const key = OG.edgeKey(edge);
+    const label = document.createElement("label");
+    label.className = "edge-pick";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.dataset.key = key;
+    box.checked = (kind === "rel" ? state.rels : state.quals).has(key);
+    const text = document.createElement("span");
+    text.className = "edge-pick-text";
+    if (kind === "qual" && edge.phrase) {
+      text.classList.add("qual-line");
+      text.dataset.phrase = edge.phrase;
+      paintPhrase(text, edge.phrase);
+    } else {
+      const prop = document.createElement("span");
+      prop.className = "rel-word";
+      prop.style.color = edge.color || (kind === "qual" ? (OG.QUAL_COLOR || "#9a3d6b") : "");
+      prop.style.fontWeight = "700";
+      prop.textContent = edge.prop || "";
+      text.append(prop);
+      const targetName = edge.targetName || (g && g.names[edge.target]) || "";
+      if (targetName) text.append(" " + OG.spaced(targetName));
+    }
+    const id = (kind === "rel" ? "rel-pick-" : "qual-pick-") + key.replace(/[^A-Za-z0-9_-]+/g, "_");
+    box.id = id;
+    label.setAttribute("for", id);
+    // Keep the input inside the label as well, and still set for/id so
+    // the control is a real labelled checkbox for keyboard users.
+    box.addEventListener("change", () => {
+      const selected = kind === "rel" ? state.rels : state.quals;
+      if (box.checked) {
+        selected.add(key);
+        if (kind === "rel") state.relOn = true;
+        else state.qualOn = true;
+      } else {
+        selected.delete(key);
+      }
+      if (kind === "rel") applyRelSelection();
+      else applyQualSelection();
+    });
+    label.append(box, text);
+    return label;
+  }
+
   function paintRelSection() {
     const box = document.getElementById("rel-box");
     if (!box) return;
@@ -442,73 +587,144 @@
       return;
     }
     box.className = "";
-    const actions = document.createElement("div");
-    actions.className = "rel-actions";
-    const all = document.createElement("button");
-    all.type = "button";
-    all.textContent = "All";
-    const none = document.createElement("button");
-    none.type = "button";
-    none.textContent = "None";
-    all.addEventListener("click", () => { state.rels = new Set(focusRels.map((edge) => edge.prop)); applyRelSelection(); });
-    none.addEventListener("click", () => { state.rels = new Set(); applyRelSelection(); });
-    actions.append(all, none);
-    box.append(actions);
+    box.append(makeAllNone("rel"));
+    const g = model.graph;
     const groups = new Map();
-    for (const edge of focusRels) {
-      if (!groups.has(edge.group)) groups.set(edge.group, new Map());
-      const kinds = groups.get(edge.group);
-      if (!kinds.has(edge.prop)) kinds.set(edge.prop, { color: edge.color, n: 0 });
-      kinds.get(edge.prop).n += 1;
-    }
     const key = document.createElement("div");
     key.className = "rel-key";
-    for (const [group, kinds] of groups) {
+    const seenProp = new Set();
+    for (const edge of focusRels) {
+      if (!groups.has(edge.group)) groups.set(edge.group, []);
+      groups.get(edge.group).push(edge);
+      if (seenProp.has(edge.prop)) continue;
+      seenProp.add(edge.prop);
+      const legend = document.createElement("span");
+      legend.style.color = edge.color;
+      const dash = document.createElement("i");
+      dash.className = "rel-swatch";
+      legend.append(dash, edge.prop);
+      key.append(legend);
+    }
+    box.append(key);
+    const list = document.createElement("div");
+    list.id = "rel-list";
+    list.className = "edge-list";
+    list.setAttribute("role", "group");
+    list.setAttribute("aria-label", "Definition relationships to draw");
+    for (const [group, edges] of groups) {
       const heading = document.createElement("div");
       heading.className = "rel-group";
       heading.textContent = group;
-      box.append(heading);
-      for (const [prop, info] of kinds) {
-        const row = document.createElement("div");
-        row.className = "rel-kind";
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = prop + " (" + info.n + ")";
-        button.setAttribute("aria-pressed", state.rels.has(prop) ? "true" : "false");
-        button.style.background = state.rels.has(prop) ? info.color : "";
-        button.addEventListener("click", () => {
-          if (state.rels.has(prop)) state.rels.delete(prop);
-          else state.rels.add(prop);
-          applyRelSelection();
-        });
-        const sw = document.createElement("span");
-        sw.className = "rel-swatch";
-        sw.style.color = info.color;
-        row.append(button, sw);
-        box.append(row);
-        const legend = document.createElement("span");
-        legend.style.color = info.color;
-        const dash = document.createElement("i");
-        dash.className = "rel-swatch";
-        legend.append(dash, prop);
-        key.append(legend);
-      }
+      list.append(heading);
+      for (const edge of edges) list.append(makePickRow("rel", edge, g));
     }
-    box.append(key);
+    box.append(list);
+    updatePickCount("rel");
     syncActions();
   }
 
   function applyRelSelection() {
-    state.relEdges = focusRels.filter((edge) => state.rels.has(edge.prop));
+    state.relEdges = selectedDrawnEdges(focusRels, state.rels, state.relOn);
+    syncPickChecks("rel");
     syncActions();
     if (model) draw();
-    paintRelSection();
+  }
+
+  function applyQualSelection() {
+    state.qualEdges = selectedDrawnEdges(focusQuals, state.quals, state.qualOn);
+    syncPickChecks("qual");
+    syncActions();
+    if (model) draw();
+  }
+
+  function paintQualSection(container, edges) {
+    let box = document.getElementById("qual-box");
+    if (box) box.remove();
+    if (!edges || !edges.length) return;
+    box = document.createElement("div");
+    box.id = "qual-box";
+    box.append(makeAllNone("qual"));
+    const color = OG.QUAL_COLOR || "#9a3d6b";
+    const key = document.createElement("div");
+    key.className = "rel-key";
+    const seenProp = new Set();
+    const groups = new Map();
+    for (const edge of edges) {
+      if (!groups.has(edge.prop)) groups.set(edge.prop, []);
+      groups.get(edge.prop).push(edge);
+      if (seenProp.has(edge.prop)) continue;
+      seenProp.add(edge.prop);
+      const legend = document.createElement("span");
+      legend.style.color = color;
+      const dash = document.createElement("i");
+      dash.className = "rel-swatch qual-swatch";
+      legend.append(dash, edge.prop);
+      key.append(legend);
+    }
+    box.append(key);
+    const list = document.createElement("div");
+    list.id = "qual-list";
+    list.className = "edge-list";
+    list.setAttribute("role", "group");
+    list.setAttribute("aria-label", "Sanctions and qualifiers to draw");
+    const g = model.graph;
+    for (const [prop, rows] of groups) {
+      const heading = document.createElement("div");
+      heading.className = "rel-group";
+      heading.textContent = prop;
+      list.append(heading);
+      for (const edge of rows) list.append(makePickRow("qual", edge, g));
+    }
+    box.append(list);
+    const leftover = container.querySelector("ul.quals");
+    if (leftover) leftover.remove();
+    container.prepend(box);
+    updatePickCount("qual");
+    syncActions();
+  }
+
+  function mergeRecords(members, recs, g) {
+    const canon = g.canon[members[0]];
+    const order = [canon, ...members.filter((m) => m !== canon)];
+    const byId = new Map(members.map((m, i) => [m, recs[i]]));
+    function pick(key, pred) {
+      let fallback = null;
+      for (const m of order) {
+        const rec = byId.get(m);
+        if (!rec || rec[key] == null || rec[key] === "") continue;
+        if (!pred || pred(rec[key])) return rec[key];
+        if (fallback == null) fallback = rec[key];
+      }
+      return fallback;
+    }
+    const q = [];
+    const qSeen = new Set();
+    for (const m of order) {
+      const rec = byId.get(m);
+      if (!rec || !rec.q) continue;
+      for (const phrase of rec.q) {
+        if (qSeen.has(phrase)) continue;
+        qSeen.add(phrase);
+        q.push(phrase);
+      }
+    }
+    return {
+      d: pick("d", (text) => !/^equivalent to /.test(text)),
+      s: pick("s"),
+      r: pick("r"),
+      l: pick("l"),
+      f: pick("f"),
+      g: pick("g"),
+      q: q.length ? q : null,
+    };
   }
 
   function fillPanel(id) {
     const token = ++panelToken;
     const g = model.graph;
     const name = g.names[id];
+    const members = OG.equivMembers(g, id);
+    const hier = OG.collapsedHierarchy(g, id);
     const moduleName = model.meta.modules[g.mod[id]] || "Unspecified";
     const label = model.labels[String(id)];
     hideInfo();
@@ -517,43 +733,55 @@
     kicker.className = "kicker";
     kicker.textContent = moduleName;
     const title = document.createElement("h2");
-    title.textContent = label || OG.spaced(name);
+    title.textContent = members.length > 1 ? OG.spaced(OG.groupHeading(g, id)) : (label || OG.spaced(name));
     const official = document.createElement("p");
     official.className = "official";
-    official.innerHTML = "<code>" + escapeHtml(name) + "</code>";
+    official.innerHTML = members.map((mid) => "<code>" + escapeHtml(g.names[mid]) + "</code>").join(" = ");
     panel.append(kicker, title, official);
-    const relSlot = section("Relationships", "Dashed arrows are definition roles, pointing at the filler. Is-a links have no arrowheads. The same colour on a sanction, or in the GRAIL source, names that role but is not drawn: a sanction says what is allowed, and a definition link says what this concept has. Every selected target is climbed by is-a to the root, and clustering folds the shared ancestors. A nested filler is one edge to its genus; the nesting stays in the definition text.");
+    if (members.length > 1 && label && label !== title.textContent) {
+      const p = document.createElement("p");
+      p.className = "muted";
+      p.textContent = "Language note: " + label;
+      official.after(p);
+    }
+    const relSlot = section("Relationships", "Dashed arrows are definition roles, pointing at the filler. Is-a links have no arrowheads. Tick the items you want on the graph. All and None change the whole list. The first 16 are checked to start with; you can check more, or fewer. The count is how many are checked. The Relationships button turns drawing on or off without forgetting the ticks. A new concept resets the list. Ticking a box while drawing is off turns it on.");
     relSlot.el.id = "rel-section";
     relSlot.body.id = "rel-box";
     relSlot.body.textContent = "Loading definition relationships…";
     const defSlot = section("Definition");
     defSlot.body.id = "def-text";
     defSlot.body.textContent = "Loading the definition…";
-    const qualSlot = section("Sanctions and qualifiers");
+    const qualSlot = section("Sanctions and qualifiers", "Dotted arrows are sanctions and qualifiers: a role that is allowed for this concept, not a definition link. They use one colour, distinct from is-a and from the dashed definition-role arrows. Tick the items you want on the graph, as with Relationships. The first 16 are checked to start with; you can check more, or fewer. The Sanctions and qualifiers button turns drawing on or off without forgetting the ticks. A new concept resets the list. Ticking a box while drawing is off turns it on.");
+    qualSlot.el.id = "qual-section";
     const rubricSlot = section("Dissection rubric");
     const grailSlot = section("GRAIL source");
     qualSlot.el.hidden = rubricSlot.el.hidden = grailSlot.el.hidden = true;
 
-    const parents = g.parents[id];
+    const parents = hier.parentsOf(id);
     const parentSlot = section("Parents");
     const shownParents = parents.filter((pid) => state.showGen || !g.gen[pid]);
     const hiddenParents = parents.length - shownParents.length;
     fillLinks(parentSlot.body, shownParents);
     if (hiddenParents) note(parentSlot.body, hiddenParents + (hiddenParents === 1 ? " generated parent hidden" : " generated parents hidden"), "Turn on “Show generated classes” to list them.");
 
-    const kids = g.children[id].filter((cid) => state.showGen || !g.gen[cid]);
-    const hiddenKids = g.children[id].length - kids.length;
+    const allKids = hier.childrenOf(id);
+    const kids = allKids.filter((cid) => state.showGen || !g.gen[cid]);
+    const hiddenKids = allKids.length - kids.length;
     const childSlot = section("Children");
     const filter = document.createElement("input");
     filter.id = "child-filter";
-    filter.placeholder = "Filter " + g.children[id].length + " children";
+    filter.placeholder = "Filter " + allKids.length + " children";
     filter.setAttribute("aria-label", "Filter children");
     const childList = document.createElement("ul");
     childList.className = "links";
     childSlot.body.append(filter, childList);
     const paintKids = () => {
       const needle = filter.value.trim().toLowerCase();
-      const matched = kids.filter((cid) => !needle || g.names[cid].toLowerCase().includes(needle) || OG.spaced(g.names[cid]).toLowerCase().includes(needle)).slice(0, 80);
+      const matched = kids.filter((cid) => {
+        if (!needle) return true;
+        const hay = (OG.groupHeading(g, cid) + " " + OG.spaced(OG.groupHeading(g, cid))).toLowerCase();
+        return hay.includes(needle);
+      }).slice(0, 80);
       fillLinks(childList, matched);
       if (kids.length > matched.length) note(childList, "Showing " + matched.length + " of " + kids.length + ".");
     };
@@ -561,12 +789,50 @@
     paintKids();
     if (hiddenKids) note(childSlot.body, hiddenKids + (hiddenKids === 1 ? " generated child hidden" : " generated children hidden"), "Turn on “Show generated classes” to list them.");
 
-    const eqSlot = section("Equivalents");
-    if (g.equiv[id].length) fillLinks(eqSlot.body, g.equiv[id]);
-    else eqSlot.el.hidden = true;
+    const rawNames = OG.rawEquivalents(g, id);
+    if (OG.isBannedBag(g, id) && rawNames.length > 1) {
+      const namesSlot = section("Ambiguous names", "The classified dump marks these names as equivalent under BannedKnowledgeNames because the GRAIL names are ambiguous (ZootleWordle is the placeholder). They are not one clinical concept, so the browser keeps them as separate nodes.");
+      const p = document.createElement("p");
+      p.className = "muted";
+      p.textContent = "Banned or ambiguous knowledge name. The dump groups it with:";
+      const list = document.createElement("ul");
+      list.className = "links";
+      for (const mid of rawNames) {
+        if (mid === id) continue;
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = "#concept=" + encodeURIComponent(g.names[mid]);
+        a.textContent = OG.spaced(g.names[mid]);
+        a.title = g.names[mid];
+        li.append(a);
+        list.append(li);
+      }
+      namesSlot.body.append(p, list);
+    } else if (members.length > 1) {
+      const namesSlot = section("Names", "These names are one concept in the classified hierarchy. The canonical name prefers a short readable name over a long which-style class, then the member with the most is-a relations, then the shorter official name; ties are broken alphabetically. Opening any name shows this same group; the address keeps the name you opened.");
+      const list = document.createElement("ul");
+      list.className = "links";
+      for (const mid of members) {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = "#concept=" + encodeURIComponent(g.names[mid]);
+        a.textContent = OG.spaced(g.names[mid]);
+        a.title = g.names[mid];
+        li.append(a);
+        if (mid === g.canon[id]) {
+          const mark = document.createElement("span");
+          mark.className = "muted";
+          mark.textContent = " (canonical)";
+          li.append(mark);
+        }
+        list.append(li);
+      }
+      namesSlot.body.append(list);
+    }
 
-    OG.loadRecord(model, id).then((rec) => {
+    Promise.all(members.map((mid) => OG.loadRecord(model, mid))).then((recs) => {
       if (token !== panelToken) return;
+      const rec = mergeRecords(members, recs, g);
       if (rec && rec.s) kicker.textContent = moduleName + " · " + rec.s;
       if (!rec || !rec.d) {
         defSlot.body.textContent = "None published.";
@@ -581,16 +847,30 @@
       }
       if (rec && rec.q && rec.q.length) {
         qualSlot.el.hidden = false;
-        const ul = document.createElement("ul");
-        ul.className = "quals";
+        const edges = [];
+        const seen = new Set();
         for (const phrase of rec.q) {
-          const li = document.createElement("li");
-          li.className = "qual-line";
-          li.dataset.phrase = phrase;
-          ul.append(li);
-          paintPhrase(li, phrase);
+          const edge = OG.parseQualPhrase(phrase, g.byName);
+          if (edge) {
+            const key = edge.prop + ":" + edge.target;
+            if (!seen.has(key)) {
+              seen.add(key);
+              edges.push(edge);
+            }
+          }
         }
-        qualSlot.body.append(ul);
+        focusQuals = edges;
+        if (!state.qualReady) {
+          state.quals = new Set(OG.defaultEdgeKeys(edges));
+          state.qualOn = false;
+          state.qualReady = true;
+        }
+        state.qualEdges = state.qualOn ? edges.filter((edge) => state.quals.has(OG.edgeKey(edge))) : [];
+        paintQualSection(qualSlot.body, edges);
+        if (state.qualOn) draw();
+      } else {
+        focusQuals = [];
+        state.qualEdges = [];
       }
       if (rec && rec.r) {
         rubricSlot.el.hidden = false;
@@ -612,7 +892,7 @@
         paintColored(pre, rec.g);
         grailSlot.body.append(pre);
       }
-      if (rec && rec.l && rec.l !== title.textContent) {
+      if (rec && rec.l && rec.l !== title.textContent && rec.l !== (model.labels[String(id)] || "")) {
         const p = document.createElement("p");
         p.className = "muted";
         p.textContent = "Language note: " + rec.l;
@@ -652,8 +932,8 @@
       const li = document.createElement("li");
       const a = document.createElement("a");
       a.href = "#concept=" + encodeURIComponent(model.graph.names[id]);
-      a.textContent = OG.spaced(model.graph.names[id]);
-      a.title = model.graph.names[id];
+      a.textContent = OG.spaced(OG.neighbourLabel(model.graph, id));
+      a.title = OG.groupHeading(model.graph, id);
       if (model.graph.gen[id]) a.className = "gen";
       li.append(a);
       list.append(li);
@@ -668,6 +948,14 @@
     container.append(p);
   }
 
+  function edgeLabel(rel) {
+    if (rel && rel.kind === "qual") {
+      const kind = rel.group && rel.group !== "sanction" ? rel.group + " " : "";
+      return kind + (rel.prop || "sanction");
+    }
+    return (rel && rel.prop) || "";
+  }
+
   function escapeHtml(text) {
     return String(text).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   }
@@ -678,7 +966,8 @@
     document.querySelectorAll("[data-act=children]").forEach((button) => button.setAttribute("aria-pressed", childrenShown() ? "true" : "false"));
     document.querySelectorAll("[data-act=siblings]").forEach((button) => button.setAttribute("aria-pressed", siblingsShown() ? "true" : "false"));
     document.querySelectorAll("[data-act=ancestors]").forEach((button) => button.setAttribute("aria-pressed", state.ancestorsOnly ? "true" : "false"));
-    document.querySelectorAll("[data-act=rels]").forEach((button) => button.setAttribute("aria-pressed", state.rels.size ? "true" : "false"));
+    document.querySelectorAll("[data-act=rels]").forEach((button) => button.setAttribute("aria-pressed", state.relOn ? "true" : "false"));
+    document.querySelectorAll("[data-act=quals]").forEach((button) => button.setAttribute("aria-pressed", state.qualOn ? "true" : "false"));
   }
   function applyAction(act) {
     if (act === "children") {
@@ -690,12 +979,31 @@
     } else if (act === "ancestors") {
       state.ancestorsOnly = !state.ancestorsOnly;
     } else if (act === "rels") {
-      const kinds = [...new Set(focusRels.map((edge) => edge.prop))];
-      const allOn = kinds.length > 0 && kinds.every((kind) => state.rels.has(kind));
-      state.rels = allOn ? new Set() : new Set(kinds);
+      if (state.relOn) {
+        state.relOn = false;
+      } else {
+        state.relOn = true;
+        if (!state.rels.size && focusRels.length) {
+          state.rels = new Set(OG.defaultEdgeKeys(focusRels));
+        }
+      }
       if (panelEl.classList.contains("is-collapsed")) setPanelOpen(true);
       applyRelSelection();
       const section = document.getElementById("rel-section");
+      if (section) section.scrollIntoView({ block: "nearest" });
+      return;
+    } else if (act === "quals") {
+      if (state.qualOn) {
+        state.qualOn = false;
+      } else {
+        state.qualOn = true;
+        if (!state.quals.size && focusQuals.length) {
+          state.quals = new Set(OG.defaultEdgeKeys(focusQuals));
+        }
+      }
+      if (panelEl.classList.contains("is-collapsed")) setPanelOpen(true);
+      applyQualSelection();
+      const section = document.getElementById("qual-section");
       if (section) section.scrollIntoView({ block: "nearest" });
       return;
     }
@@ -762,10 +1070,14 @@
       const strong = document.createElement("span");
       strong.textContent = OG.spaced(model.graph.names[id]);
       button.append(strong);
+      const alias = OG.isBannedBag(model.graph, id) ? [] : model.graph.equiv[id];
       const label = model.labels[String(id)];
-      if (label) {
+      const notes = [];
+      if (alias && alias.length) notes.push("= " + alias.map((eid) => model.graph.names[eid]).join(" = "));
+      if (label) notes.push(label);
+      if (notes.length) {
         const small = document.createElement("small");
-        small.textContent = label;
+        small.textContent = notes.join(" · ");
         button.append(small);
       }
       button.addEventListener("mousedown", (event) => {
@@ -832,9 +1144,14 @@
       aboutCounts.textContent = counts.concepts.toLocaleString() + " concepts and "
         + counts.uniqueParentLinks.toLocaleString() + " parent links, from the with-property-chains hierarchy.";
     }
-    const named = hashName();
+    const named = requestedName();
     const start = named && model.graph.byName.has(named) ? named : model.meta.defaultConcept;
-    if (!named) history.replaceState(null, "", "#concept=" + encodeURIComponent(start));
+    if (!hashName() && start) {
+      const url = new URL(location.href);
+      url.searchParams.delete("concept");
+      const search = url.searchParams.toString();
+      history.replaceState(null, "", url.pathname + (search ? "?" + search : "") + "#concept=" + encodeURIComponent(start));
+    }
     showFocus(start);
   }).catch((err) => {
     setStatus(err.message || String(err));

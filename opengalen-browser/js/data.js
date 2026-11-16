@@ -105,7 +105,217 @@
       byName.set(names[i], i);
     }
     const order = names.map((_, i) => i).sort((a, b) => names[a].toLowerCase() < names[b].toLowerCase() ? -1 : names[a].toLowerCase() > names[b].toLowerCase() ? 1 : a - b);
-    return { n, names, parents, children, equiv, mod, gen, byName, order };
+    const graph = { n, names, parents, children, equiv, mod, gen, byName, order };
+    attachCanon(graph);
+    return graph;
+  }
+
+  /* Canonical name of an equivalence group:
+     1. Prefer a name that does not contain "which" (short readable names
+        such as MentalDisease beat a long inferred which-class).
+     2. Then the member with the most classified is-a relations (parent
+        links plus child links).
+     3. Then the shorter official name.
+     4. Ties broken alphabetically (case-insensitive, then the original
+        string).
+     The URL hash keeps the name the user opened; the canonical name is
+     the representative when the group appears as a neighbour.
+     The dump's BannedKnowledgeNames bag (ZootleWordle, Base, Tonsil, …)
+     is not merged: those names are marked equivalent because they are
+     ambiguous, not because they are one concept. */
+  function relationCount(graph, id) {
+    return graph.parents[id].length + graph.children[id].length;
+  }
+
+  function isWhichStyle(name) {
+    return name.indexOf("which") >= 0;
+  }
+
+  function compareCanon(graph, a, b) {
+    const wa = isWhichStyle(graph.names[a]) ? 1 : 0;
+    const wb = isWhichStyle(graph.names[b]) ? 1 : 0;
+    if (wa !== wb) return wa - wb;
+    const ra = relationCount(graph, a);
+    const rb = relationCount(graph, b);
+    if (rb !== ra) return rb - ra;
+    const la = graph.names[a].length;
+    const lb = graph.names[b].length;
+    if (la !== lb) return la - lb;
+    const na = graph.names[a].toLowerCase();
+    const nb = graph.names[b].toLowerCase();
+    if (na !== nb) return na < nb ? -1 : 1;
+    if (graph.names[a] !== graph.names[b]) return graph.names[a] < graph.names[b] ? -1 : 1;
+    return a - b;
+  }
+
+  function rawEquivalents(graph, id) {
+    const others = graph.equiv[id];
+    return others && others.length ? [id].concat(others) : [id];
+  }
+
+  function isBannedBag(graph, id) {
+    const members = rawEquivalents(graph, id);
+    for (const m of members) {
+      if (graph.names[m] === "ZootleWordle") return true;
+      for (const p of graph.parents[m]) {
+        if (graph.names[p] === "BannedKnowledgeNames") return true;
+      }
+    }
+    return false;
+  }
+
+  function attachCanon(graph) {
+    const { n, equiv } = graph;
+    const canon = new Array(n);
+    for (let i = 0; i < n; i++) {
+      if (canon[i] != null) continue;
+      const members = [i].concat(equiv[i]);
+      if (isBannedBag(graph, i)) {
+        for (const m of members) canon[m] = m;
+        continue;
+      }
+      members.sort((a, b) => compareCanon(graph, a, b));
+      const chosen = members[0];
+      for (const m of members) canon[m] = chosen;
+    }
+    graph.canon = canon;
+    return graph;
+  }
+
+  function equivMembers(graph, id) {
+    if (isBannedBag(graph, id)) return [id];
+    return rawEquivalents(graph, id);
+  }
+
+  const QUAL_PREFIXES = [
+    "sensiblyAndTopicNecessarily",
+    "grammaticallyAndTopicNecessarily",
+    "grammaticallyAndSensibly",
+    "topicNecessarily",
+    "sensibly",
+    "grammatically",
+  ];
+  const QUAL_COLOR = "#9a3d6b";
+  // Default number of relationship or sanction items checked in the panel.
+  // Not a hard cap: the user can check more, or all, from the scrollable list.
+  const EDGE_CAP = 16;
+
+  function edgeKey(edge) {
+    if (!edge) return "";
+    const target = edge.target != null ? edge.target : (edge.targetName || "");
+    return String(edge.prop || "") + ":" + String(target);
+  }
+
+  function defaultEdgeKeys(edges, cap) {
+    const limit = cap == null ? EDGE_CAP : cap;
+    const keys = [];
+    const seen = new Set();
+    for (let i = 0; i < (edges || []).length; i++) {
+      const key = edgeKey(edges[i]);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      keys.push(key);
+      if (keys.length >= limit) break;
+    }
+    return keys;
+  }
+
+  function parseQualPhrase(phrase, byName) {
+    const text = String(phrase || "").trim();
+    if (!text) return null;
+    let rest = text;
+    let kind = "sanction";
+    for (let i = 0; i < QUAL_PREFIXES.length; i++) {
+      const prefix = QUAL_PREFIXES[i];
+      if (rest.startsWith(prefix + " ")) {
+        kind = prefix;
+        rest = rest.slice(prefix.length + 1);
+        break;
+      }
+    }
+    const space = rest.indexOf(" ");
+    if (space < 1) return null;
+    const role = rest.slice(0, space);
+    const targetName = rest.slice(space + 1).trim();
+    if (!role || !targetName || !byName) return null;
+    const target = byName.get(targetName);
+    if (target == null) return null;
+    return { kind, role, prop: role, target, targetName, phrase: text, color: QUAL_COLOR };
+  }
+
+  function groupHeading(graph, id) {
+    return equivMembers(graph, id).map((i) => graph.names[i]).join(" = ");
+  }
+
+  function neighbourLabel(graph, id) {
+    const members = equivMembers(graph, id);
+    if (members.length === 1) return graph.names[id];
+    const c = graph.canon[id];
+    const names = [graph.names[c]].concat(members.filter((i) => i !== c).map((i) => graph.names[i]));
+    const joined = names.join(" = ");
+    if (names.length <= 3 && joined.length <= 48) return joined;
+    return graph.names[c];
+  }
+
+  function nodeLabel(graph, id, focus) {
+    return id === focus ? groupHeading(graph, id) : neighbourLabel(graph, id);
+  }
+
+  function nameSort(graph, ids) {
+    ids.sort((a, b) => {
+      const na = graph.names[a].toLowerCase();
+      const nb = graph.names[b].toLowerCase();
+      if (na !== nb) return na < nb ? -1 : 1;
+      return a - b;
+    });
+    return ids;
+  }
+
+  function collapsedHierarchy(graph, focus) {
+    const { parents, children, canon } = graph;
+    const focusGroup = new Set(equivMembers(graph, focus));
+    function rep(id) {
+      return focusGroup.has(id) ? focus : canon[id];
+    }
+    const upCache = new Map();
+    const downCache = new Map();
+    function parentsOf(id) {
+      let out = upCache.get(id);
+      if (out) return out;
+      const members = equivMembers(graph, id);
+      const seen = new Set();
+      out = [];
+      for (const m of members) {
+        for (const p of parents[m]) {
+          const r = rep(p);
+          if (members.includes(p) || r === rep(id) || seen.has(r)) continue;
+          seen.add(r);
+          out.push(r);
+        }
+      }
+      nameSort(graph, out);
+      upCache.set(id, out);
+      return out;
+    }
+    function childrenOf(id) {
+      let out = downCache.get(id);
+      if (out) return out;
+      const members = equivMembers(graph, id);
+      const seen = new Set();
+      out = [];
+      for (const m of members) {
+        for (const child of children[m]) {
+          const r = rep(child);
+          if (members.includes(child) || r === rep(id) || seen.has(r)) continue;
+          seen.add(r);
+          out.push(r);
+        }
+      }
+      nameSort(graph, out);
+      downCache.set(id, out);
+      return out;
+    }
+    return { rep, parentsOf, childrenOf, focusGroup };
   }
 
   function parseSearch(buf) {
@@ -308,4 +518,17 @@
   OG.loadRels = loadRels;
   OG.searchConcepts = searchConcepts;
   OG.spaced = spaced;
+  OG.equivMembers = equivMembers;
+  OG.rawEquivalents = rawEquivalents;
+  OG.isBannedBag = isBannedBag;
+  OG.groupHeading = groupHeading;
+  OG.neighbourLabel = neighbourLabel;
+  OG.nodeLabel = nodeLabel;
+  OG.collapsedHierarchy = collapsedHierarchy;
+  OG.parseQualPhrase = parseQualPhrase;
+  OG.edgeKey = edgeKey;
+  OG.defaultEdgeKeys = defaultEdgeKeys;
+  OG.QUAL_COLOR = QUAL_COLOR;
+  OG.EDGE_CAP = EDGE_CAP;
+  OG.QUAL_PREFIXES = QUAL_PREFIXES;
 })();

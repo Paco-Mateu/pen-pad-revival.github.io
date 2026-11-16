@@ -17,7 +17,7 @@
     return h.formatHex();
   });
 
-  function ancestorSet(parents, seeds) {
+  function ancestorSet(parentFn, seeds) {
     const list = Array.isArray(seeds) ? seeds : [seeds];
     const anc = new Set();
     const stack = [];
@@ -28,7 +28,7 @@
     }
     while (stack.length) {
       const node = stack.pop();
-      for (const parent of parents[node]) {
+      for (const parent of parentFn(node)) {
         if (!anc.has(parent)) {
           anc.add(parent);
           stack.push(parent);
@@ -38,16 +38,16 @@
     return anc;
   }
 
-  function upsOf(parents, anc, hidden, id) {
+  function upsOf(parentFn, anc, hidden, id) {
     const out = [];
     const seen = new Set();
-    const stack = parents[id].slice();
+    const stack = parentFn(id).slice();
     while (stack.length) {
       const parent = stack.pop();
       if (seen.has(parent) || !anc.has(parent)) continue;
       seen.add(parent);
       if (hidden.has(parent)) {
-        for (const grand of parents[parent]) stack.push(grand);
+        for (const grand of parentFn(parent)) stack.push(grand);
       } else out.push(parent);
     }
     return out;
@@ -111,17 +111,37 @@
   }
 
   function buildView(graph, focus, state) {
-    const { parents, children, gen, names } = graph;
-    const relEdges = (state.relEdges || []).filter((edge) => state.rels && state.rels.has(edge.prop));
-    const seeds = [focus, ...relEdges.map((edge) => edge.target)];
-    const anc = ancestorSet(parents, seeds);
+    const { gen, names } = graph;
+    const hier = OG.collapsedHierarchy(graph, focus);
+    const seenRel = new Set();
+    const relEdges = [];
+    for (const edge of state.relEdges || []) {
+      const target = hier.rep(edge.target);
+      if (target === focus) continue;
+      const key = (OG.edgeKey ? OG.edgeKey(edge) : edge.prop + ":" + edge.target) + ":" + target;
+      if (seenRel.has(key)) continue;
+      seenRel.add(key);
+      relEdges.push({ ...edge, target });
+    }
+    const seenQual = new Set();
+    const qualEdges = [];
+    for (const edge of state.qualEdges || []) {
+      const target = hier.rep(edge.target);
+      if (target === focus) continue;
+      const key = (OG.edgeKey ? OG.edgeKey(edge) : edge.prop + ":" + edge.target) + ":" + target;
+      if (seenQual.has(key)) continue;
+      seenQual.add(key);
+      qualEdges.push({ ...edge, target });
+    }
+    const seeds = [focus, ...relEdges.map((edge) => edge.target), ...qualEdges.map((edge) => edge.target)];
+    const anc = ancestorSet(hier.parentsOf, seeds);
     const seedSet = new Set(seeds);
     const hidden = new Set();
     if (!state.showGen) {
       for (const id of anc) if (!seedSet.has(id) && gen[id]) hidden.add(id);
     }
     const vis = new Set([...anc].filter((id) => !hidden.has(id)));
-    const parentOf = (id) => upsOf(parents, anc, hidden, id).filter((p) => vis.has(p));
+    const parentOf = (id) => upsOf(hier.parentsOf, anc, hidden, id).filter((p) => vis.has(p));
     let { keep, clusters, kids } = clusterAncestors(seeds, vis, parentOf);
     const clusteringOn = state.clustering !== false;
     const expanded = clusteringOn ? state.expanded : new Set();
@@ -165,8 +185,9 @@
 
     const showChildren = state.children !== false && !state.ancestorsOnly;
     const childCap = 16 + (state.childExtra || 0);
-    let childIds = showChildren ? children[focus].filter((id) => state.showGen || !gen[id]) : [];
-    const childHidden = showChildren ? children[focus].length - childIds.length : 0;
+    const focusChildren = hier.childrenOf(focus);
+    let childIds = showChildren ? focusChildren.filter((id) => state.showGen || !gen[id]) : [];
+    const childHidden = showChildren ? focusChildren.length - childIds.length : 0;
     const more = Math.max(0, childIds.length - childCap);
     childIds = childIds.slice(0, childCap);
     for (const id of childIds) addConcept(id, "child", null);
@@ -176,7 +197,7 @@
     if (state.siblings && !state.ancestorsOnly) {
       const seen = new Set([focus, ...childIds]);
       for (const parent of parentOf(focus)) {
-        for (const kid of children[parent]) {
+        for (const kid of hier.childrenOf(parent)) {
           if (seen.has(kid) || (!state.showGen && gen[kid])) continue;
           seen.add(kid);
           siblings.push(kid);
@@ -204,7 +225,7 @@
         continue;
       }
       if (node.role === "sib") {
-        const parent = parentOf(focus).find((item) => children[item].includes(id));
+        const parent = parentOf(focus).find((item) => hier.childrenOf(item).includes(id));
         link(parent != null ? rep(parent) : "n" + focus, node.key, "sib");
         continue;
       }
@@ -225,12 +246,29 @@
       if (!nodes.has(from) || !nodes.has(to) || from === to) continue;
       relLinks.push({ source: from, target: to, kind: "rel", prop: edge.prop, color: edge.color, group: edge.group, targetId: edge.target });
     }
+    const qualLinks = [];
+    for (const edge of qualEdges) {
+      const from = rep(focus);
+      const to = rep(edge.target);
+      if (!nodes.has(from) || !nodes.has(to) || from === to) continue;
+      qualLinks.push({
+        source: from,
+        target: to,
+        kind: "qual",
+        prop: edge.prop,
+        color: edge.color || OG.QUAL_COLOR || "#9a3d6b",
+        group: edge.kind,
+        targetId: edge.target,
+        phrase: edge.phrase,
+      });
+    }
 
     return {
       nodes: [...nodes.values()],
       links,
       clusters,
       relLinks,
+      qualLinks,
       childHidden,
       ancestorCount: anc.size,
       visibleCount: vis.size,
@@ -356,7 +394,7 @@
       if (node.kind === "more") {
         return { ...node, lines: ["+" + node.count], w: 40, h: 16 };
       }
-      const lines = state.labels || node.role === "focus" ? labelLines(graph.names[node.concept], node.role === "focus" ? 28 : 22) : [];
+      const lines = state.labels || node.role === "focus" ? labelLines(OG.nodeLabel(graph, node.concept, focus), node.role === "focus" ? 28 : 22) : [];
       const w = lines.length ? Math.max(18, d3.max(lines, (line) => textWidth(line, 11, node.role === "focus" ? 700 : 500)) + 8) : 16;
       return { ...node, lines, w, h: lines.length > 1 ? 28 : 16 };
     });
@@ -548,6 +586,54 @@
           .text(rel.prop);
       }
     }
+    for (const rel of view.qualLinks || []) {
+      const a = pos.get(rel.source);
+      const b = pos.get(rel.target);
+      if (!a || !b) continue;
+      const mx = (a[0] + b[0]) / 2 + (a[0] <= b[0] ? -36 : 36);
+      const my = (a[1] + b[1]) / 2;
+      const mid = [mx, my];
+      const src = byKeyDrawn.get(rel.source);
+      const tgt = byKeyDrawn.get(rel.target);
+      const startPad = src ? glyphPad(nodeGlyph(src, graph), a, mid) : 6;
+      const endPad = tgt ? glyphPad(nodeGlyph(tgt, graph), b, mid) : 6;
+      const trimmed = trimQuadratic(a, mid, b, startPad, endPad);
+      const group = relG.append("g")
+        .attr("class", "rel-edge qual-edge")
+        .datum(rel);
+      group.append("path")
+        .attr("class", "rel-edge-line")
+        .attr("d", `M${trimmed.start[0]},${trimmed.start[1]} Q${trimmed.mid[0]},${trimmed.mid[1]} ${trimmed.end[0]},${trimmed.end[1]}`)
+        .attr("fill", "none")
+        .attr("stroke", rel.color)
+        .attr("stroke-width", 1.8)
+        .attr("stroke-dasharray", "1.8 3.2")
+        .attr("stroke-linecap", "round");
+      const capFrom = pointAlongQuad(trimmed.start, trimmed.mid, trimmed.end, 8);
+      group.append("path")
+        .attr("class", "rel-edge-head")
+        .attr("d", `M${capFrom[0]},${capFrom[1]} L${trimmed.end[0]},${trimmed.end[1]}`)
+        .attr("fill", "none")
+        .attr("stroke", rel.color)
+        .attr("stroke-width", 1.8)
+        .attr("stroke-linecap", "butt")
+        .attr("marker-end", relMarker(rel.color))
+        .attr("pointer-events", "none");
+      if (state.labels) {
+        group.append("text")
+          .attr("class", "rel-label")
+          .attr("x", mx)
+          .attr("y", my)
+          .attr("text-anchor", "middle")
+          .attr("font-size", 10)
+          .attr("font-weight", 700)
+          .attr("fill", rel.color)
+          .attr("paint-order", "stroke")
+          .attr("stroke", "#f3efe6")
+          .attr("stroke-width", 3)
+          .text(rel.prop);
+      }
+    }
     const marking = state.clustering !== false && state.marking !== false;
     for (const [index, pts] of clusterPts) {
       const col = pal[index % pal.length];
@@ -577,7 +663,7 @@
   }
 
   function parentOfCount(graph, id) {
-    return graph.parents[id].length;
+    return OG.collapsedHierarchy(graph, id).parentsOf(id).length;
   }
 
   function zoomGraph(mode) {
