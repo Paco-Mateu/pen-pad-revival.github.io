@@ -2,6 +2,8 @@
 
 This is the humble beginning of a website for the PEN &amp; PAD revival community - https://pen-pad-revival.github.io
 
+* [PEN&PAD, GALEN & GRAIL: Thoughts on lessons learned - DRAFT - Nov 2026](assets/PEN-PAD-GALEN-GRAIL.pdf). By Alan Rector (PDF)
+
 ## [Interviews](https://github.com/pen-pad-revival/interviews/)
 
 ### A conversation with Alan Rector about PEN&PAD, recorded in 4 parts, October 21, 2021
