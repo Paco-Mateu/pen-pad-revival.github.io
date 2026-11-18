@@ -187,7 +187,7 @@ Clinergy was a structured data entry system for primary care built on the PEN&PA
 ## Challenge
 This can be suitable as student projects, hackathon challenges, personal learning projects etc. 
 * Use low/no-code tools and user centered design to recreate appraches from PEN&PAD... 
-* ...then fork this repository, and create a subdirectory of your own under the `challenge` subdirectory with a readme.md file including a description (and links to your project site if available) including ways to contact you.
+* ...then fork this repository, and create a subdirectory of your own under the `challenge` subdirectory https://github.com/pen-pad-revival/pen-pad-revival.github.io/tree/main/challenge with a readme.md file including a description (and links to your project site if available) including ways to contact you.
 * Add other relevant description-related files (like screenshots) in your subdirectory.
 * Then edit the readme file in the `challenge` directory to include a describing title with a link to your subdirectory
 * Finally submit a pull request so that we can include your addition here.
