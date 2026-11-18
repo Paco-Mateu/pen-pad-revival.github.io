@@ -19,7 +19,31 @@ All of them are on Egbert's OpenGALEN mirror, on the [software page](https://ope
 | `GROWL-20091101.zip` | GROWL, the GRAIL-to-OWL patch for OpenKnoME (linked from the same page) | as listed there |
 | `opengalen8-compiled.zip` | The compiled OpenGALEN 8 model, including `OpenGALEN8_FULL.gra`/`.sem` (about 68 MB), which ROIS loads | GALEN Open Source Licence (GOSL) |
 
-The site's scripts download these files from the mirror and check sha256 values. No GALEN or Kermanog binaries are kept in this repository.
+The site's scripts download these files and check sha256 values. No GALEN or Kermanog binaries are kept in this repository.
+
+### Internet Archive copies
+
+The original opengalen.org download folder was captured by the Internet Archive's Wayback Machine (the frozen site is at [web.archive.org/web/20220308122743/https://opengalen.org/](https://web.archive.org/web/20220308122743/https://opengalen.org/)). On 2026-11-18 each file the scripts use was downloaded from its raw capture (`id_` URL) and compared with the mirror copy:
+
+| File | Mirror | Internet Archive capture | sha256 identical |
+|---|---|---|---|
+| `opengalen.exe` | [mirror](https://opengalen.eggbird.eu/download/opengalen.exe) | [2016-07-12 capture](https://web.archive.org/web/20160712010405id_/http://www.opengalen.org/download/opengalen.exe) | Yes (`5f48b207…`) |
+| `openknome.zip` | [mirror](https://opengalen.eggbird.eu/download/openknome.zip) | [2007-08-18 capture](https://web.archive.org/web/20070818150120id_/http://www.opengalen.org/download/openknome.zip) | Yes (`178c5f79…`) |
+| `opengalen8-compiled.zip` | [mirror](https://opengalen.eggbird.eu/download/opengalen8-compiled.zip) | [2011-07-16 capture](https://web.archive.org/web/20110716101016id_/http://www.opengalen.org/download/opengalen8-compiled.zip) | Yes (`adc02632…`) |
+| `ClinergyDemo.zip` | [mirror](https://opengalen.eggbird.eu/download/ClinergyDemo.zip) | [2007-08-18 capture](https://web.archive.org/web/20070818150258id_/http://www.opengalen.org/download/clinergydemo.zip) (lower-case name) | Yes (`f138c38b…`) |
+| `OG8-ReadmeFirst.pdf` (not used by the scripts) | mirror | [2022-01-19 capture](https://web.archive.org/web/20220119162518id_/https://www.opengalen.org/download/OG8-ReadmeFirst.pdf) | Yes (`a358c485…`) |
+| `GROWL-20091101.zip` (not used by the scripts) | mirror | none found: the CDX API has no capture under opengalen.org or the mirror, and the 2022 capture of `software.html` links it but the file returns 404 | mirror only |
+
+A search of archive.org items (advancedsearch for opengalen, galen, clinergy, openknome) found no uploaded items with these files. Nothing else is downloaded: the VB4 runtime, OCX controls and `ven2232.olb` for the Clinergy host demos all come out of `ClinergyDemo.zip`. clinergy-extractor is cloned from GitHub.
+
+Both scripts take a download source, as an environment variable or a first argument, and use the same checksum check for every source:
+
+```sh
+scripts/setup-galen-tools.sh install                  # default: SOURCE=mirror
+SOURCE=archive scripts/setup-galen-tools.sh install   # Internet Archive captures only
+scripts/setup-galen-tools.sh --source=auto install    # mirror first, Internet Archive if the download fails or does not match
+scripts/setup-galen-tools.sh fetch                    # only download and verify
+```
 
 ## Install and run
 
@@ -31,6 +55,8 @@ scripts/setup-galen-tools.sh gce         # starts ROIS, then GCE
 scripts/setup-galen-tools.sh gcework     # or spet, girc, humpty, openknome
 scripts/setup-galen-tools.sh kill
 ```
+
+Add `SOURCE=archive` or `--source=auto` to download from the Internet Archive instead (see [Internet Archive copies](#internet-archive-copies)).
 
 In the GCE login box, use server `localhost`, Connect, any user name, project `Default`, then Ok. Model > Open `OpenGALEN8_FULL` loads the full model.
 

@@ -10,7 +10,7 @@ Clinergy was a structured data entry system for primary care built on the PEN&PA
 
 ## Demo download
 
-[ClinergyDemo.zip](https://opengalen.eggbird.eu/download/ClinergyDemo.zip) (6 MB, a 1998 Windows installer) is on the OpenGALEN mirror. There is also a [copy archived from opengalen.org](https://web.archive.org/web/20070818150258/http://www.opengalen.org/download/clinergydemo.zip). The demo is © 1997-8 Semantic Technologies Ltd / Victoria University of Manchester, All Rights Reserved.
+[ClinergyDemo.zip](https://opengalen.eggbird.eu/download/ClinergyDemo.zip) (6 MB, a 1998 Windows installer) is on the OpenGALEN mirror. There is also a [copy archived from opengalen.org](https://web.archive.org/web/20070818150258/http://www.opengalen.org/download/clinergydemo.zip) on the Internet Archive. Its raw capture (`…/20070818150258id_/…`) is byte-identical to the mirror file (sha256 `f138c38b24de630ce0c89bc8018dbc68fc2b17e040235c9c01e10761d8114270`, checked 2026-11-18). The demo is © 1997-8 Semantic Technologies Ltd / Victoria University of Manchester, All Rights Reserved.
 
 ## Extractor
 
@@ -43,13 +43,14 @@ deno run -A clinergy-wine.ts demo                       # Pen&Pad with the model
 
 ### The fuller setup: menu bar and host demos
 
-[`scripts/setup-wine-clinergy.sh`](https://github.com/pen-pad-revival/pen-pad-revival.github.io/blob/main/scripts/setup-wine-clinergy.sh) in this site's repository runs the install above and then adds what is needed for the rest of the demo. It downloads `ClinergyDemo.zip` from the mirror (checked against a sha256) and does not contain any Clinergy files.
+[`scripts/setup-wine-clinergy.sh`](https://github.com/pen-pad-revival/pen-pad-revival.github.io/blob/main/scripts/setup-wine-clinergy.sh) in this site's repository runs the install above and then adds what is needed for the rest of the demo. It downloads `ClinergyDemo.zip` (checked against a sha256) and does not contain any Clinergy files. By default it uses the mirror. `SOURCE=archive` (or `--source=archive` as the first argument) uses the Internet Archive capture instead, and `SOURCE=auto` tries the mirror first and falls back to the archive. The VB4 runtime and controls it registers come from the same zip, so nothing else is downloaded except the clinergy-extractor checkout from GitHub.
 
 ```sh
 scripts/setup-wine-clinergy.sh install    # needs wine (32-bit), i686-w64-mingw32-gcc, deno, git, curl
 scripts/setup-wine-clinergy.sh penpad     # Pen&Pad plus the ppmenu menu bar
 scripts/setup-wine-clinergy.sh windemo    # or vbdemo, gendemo
 scripts/setup-wine-clinergy.sh kill
+SOURCE=archive scripts/setup-wine-clinergy.sh fetch   # only download and verify, here from the Internet Archive
 ```
 
 Without a `DISPLAY` it starts its own Xvfb on `:78`. What it adds:

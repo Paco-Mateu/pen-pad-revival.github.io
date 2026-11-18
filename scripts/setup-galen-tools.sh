@@ -17,11 +17,18 @@
 #   scripts/setup-galen-tools.sh gce|gcework|spet|girc|humpty
 #   scripts/setup-galen-tools.sh openknome        # OpenKnoME 5.4d (see notes in the docs: partial)
 #   scripts/setup-galen-tools.sh kill
+#   scripts/setup-galen-tools.sh fetch            # only download and verify the files
+# Download source: SOURCE=mirror (default; opengalen.eggbird.eu), SOURCE=archive (Internet
+#   Archive Wayback captures of the original opengalen.org files, byte-identical), or
+#   SOURCE=auto (mirror first, archive if that fails). Also accepted as --source=... first argument.
 # Environment: WINEPREFIX (default ~/.cache/galen-tools/wine), GALEN_CACHE (downloads),
 #              DISPLAY (an X display; e.g. `Xvfb :9 &` and DISPLAY=:9 for headless use).
 set -euo pipefail
 
 MIRROR=https://opengalen.eggbird.eu/download
+case ${1:-} in --source=*) SOURCE=${1#--source=}; shift ;; esac
+SOURCE=${SOURCE:-mirror}
+case $SOURCE in mirror|archive|auto) ;; *) echo "SOURCE must be mirror, archive or auto" >&2; exit 2 ;; esac
 CACHE=${GALEN_CACHE:-$HOME/.cache/galen-tools}
 export WINEPREFIX=${WINEPREFIX:-$CACHE/wine}
 export WINEARCH=win32
@@ -36,15 +43,32 @@ declare -A SHA=(
   [openknome.zip]=178c5f79572fe0f667849a05397592fbf7b2a48e07b9d617c00fb05693e1f6f8
   [opengalen8-compiled.zip]=adc026328ef10f26dfede2351a8e842cc9488cf46d878603a923fffcfe23ebc2
 )
+# Internet Archive (Wayback, raw "id_" captures of www.opengalen.org); checked 2026-11-18 to
+# have exactly the sha256 values above.
+WB=https://web.archive.org/web
+declare -A ARCHIVE=(
+  [opengalen.exe]=$WB/20160712010405id_/http://www.opengalen.org/download/opengalen.exe
+  [openknome.zip]=$WB/20070818150120id_/http://www.opengalen.org/download/openknome.zip
+  [opengalen8-compiled.zip]=$WB/20110716101016id_/http://www.opengalen.org/download/opengalen8-compiled.zip
+)
 
 need() { for c in "$@"; do command -v "$c" >/dev/null || { echo "missing: $c" >&2; exit 1; }; done; }
 
-fetch() { # fetch NAME -> $CACHE/NAME, checked against SHA
+get() { # get URL FILE (to a temp file, then checked)
+  echo "Downloading $2 from $1" >&2
+  curl -fL --retry 3 -o "$CACHE/$2.part" "$1" || return 1
+  echo "${SHA[$2]}  $CACHE/$2.part" | sha256sum -c --quiet - >/dev/null 2>&1 || { echo "checksum mismatch for $2 from $1" >&2; rm -f "$CACHE/$2.part"; return 1; }
+  mv "$CACHE/$2.part" "$CACHE/$2"
+}
+
+fetch() { # fetch NAME -> $CACHE/NAME, checked against SHA; source per $SOURCE
   local f=$1; mkdir -p "$CACHE"
-  [ -s "$CACHE/$f" ] || curl -fL --retry 3 -o "$CACHE/$f" "$MIRROR/$f"
-  if [ -n "${SHA[$f]:-}" ]; then
-    echo "${SHA[$f]}  $CACHE/$f" | sha256sum -c --quiet - || { echo "checksum changed for $f (mirror updated?)" >&2; exit 1; }
-  fi
+  if [ -s "$CACHE/$f" ] && echo "${SHA[$f]}  $CACHE/$f" | sha256sum -c --quiet - >/dev/null 2>&1; then return 0; fi
+  case $SOURCE in
+    mirror)  get "$MIRROR/$f" "$f" ;;
+    archive) get "${ARCHIVE[$f]}" "$f" ;;
+    auto)    get "$MIRROR/$f" "$f" || { echo "mirror failed, trying the Internet Archive" >&2; get "${ARCHIVE[$f]}" "$f"; } ;;
+  esac || { echo "could not get a verified copy of $f" >&2; exit 1; }
 }
 
 install_toolset() {
@@ -129,6 +153,7 @@ while True: time.sleep(3600)' >/dev/null 2>&1
 cmd=${1:-help}
 case $cmd in
   install) install_toolset; install_openknome ;;
+  fetch) for f in "${!SHA[@]}"; do fetch "$f"; done; echo "All downloads verified in $CACHE (source: $SOURCE)" ;;
   rois) start_rois ;;
   gce|gcework|spet|girc|humpty)
     start_rois
@@ -139,5 +164,5 @@ case $cmd in
     start_rois
     start_bg "$WINEPREFIX/drive_c/openknome" visual.exe openknome54d.im ;;
   kill) pkill -f 'Client>keepalive' || true; wineserver -k || true ;;
-  *) sed -n '2,25p' "$0"; exit 2 ;;
+  *) sed -n '2,30p' "$0"; exit 2 ;;
 esac
