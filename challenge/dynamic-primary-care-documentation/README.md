@@ -94,3 +94,9 @@ No real patient data are used.
 Download `index.html` and open it in a modern web browser.
 
 No installation, server, database or external service is required.
+
+## Contact
+
+Marek Czajkowski, maroczajkowski@gmail.com
+
+General practitioner, Avesta, Sweden
