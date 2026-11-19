@@ -2,6 +2,7 @@ This page lists contributions the brave folks that have accepted the revival cha
 
 # Nordic Hackathon 2026
 * [PEN&PAD terminology-driven input](./penpad-snomed-nordqvist) (SNOMED CT via ECL decides the options; sentence, SNOMED expression, openEHR and FHIR output) by Gunnar Nordqvist, [live demo](https://gunnarnordqvist.github.io/Hack/)
+* [Dynamic clinical documentation in primary care – exploring clinical variability with an acute otitis media prototype](dynamic-primary-care-documentation/) by Marek Czajkowski
 * ...
 
 # Old dummy example
