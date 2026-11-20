@@ -10,7 +10,9 @@ Sendero explores a contemporary PEN&PAD-style interaction: **target a clinical c
 
 The contribution is a working research prototype and a documented bridge between a concept model, reusable assessment fragments and openEHR information structures. It is motivated by the NAVETA/Visionarium project. The interface is branded “Sendero by MongoDB”; this is an experimental prototype, not an officially released MongoDB product.
 
-![Choose a concern while retaining access to other assessment topics](screenshots/03-guided-first-question.png)
+![Historical PROM evidence opens optional interview topics](screenshots/R03-prepare-interview-evidence.png)
+
+**From history to a better conversation.** In this returning-person view, reported changes in anxiety, mood and stigma lead to relevant questions. Each card offers **Explore**, **Later** and **Not relevant**. Context helps target the assessment; the professional still chooses the direction, and the patient's answer remains to be elicited.
 
 ## The PEN&PAD connection
 
@@ -41,7 +43,7 @@ This is an adaptation of the interaction and modelling principles. We did not co
 
 ![Readable review before confirmation; the mapping-draft status is explicit](screenshots/09-review-and-confirm.png)
 
-The screenshots show a demonstration encounter. Evidence cards marked synthetic are authored examples. Some captures deliberately show empty history or no comparable pathways; these are not evidence of a completed hospital integration or a successful cohort match. See the [annotated screenshot gallery](gallery.md).
+The screenshots cover two complementary situations: the earlier new-patient demonstration and the newly supplied registry views with historical PROM evidence under pseudonymous identifiers. Hospital records marked synthetic are authored scenarios, separate from the imported PROM history. Earlier empty-history and no-match captures remain in the [annotated gallery](gallery.md) as examples of those states; they do not describe every patient or the whole dataset.
 
 ## Four models, with explicit connections
 
@@ -87,19 +89,31 @@ The [OpenGALEN browser](https://erik-sundvalls-bots.github.io/opengalen-browser/
 
 Selecting an assessment type exposes its parents, children and fragments. Optional layers show form refinements and source/record mappings with distinct relationship types. For example, a combined sleep-and-medication assessment can reuse both sets of fragments without duplicating a shared question.
 
-![Separate layers for assessment fragments and source or record mappings](screenshots/13b-ontology-with-layers.png)
+The [fragment-and-mapping overlay](screenshots/13b-ontology-with-layers.png) shows the links separately from the hierarchy.
 
 This is an explicitly authored local assessment ontology and a searchable knowledge catalogue, not the full SNOMED CT ontology or an OpenGALEN/GRAIL reasoner. SNOMED CT is a candidate terminology foundation; live, edition-specific terminology qualification remains future work. Empirical cohort relationships do not participate in classification.
 
 ## What the contemporary extensions add
 
-**Longitudinal context.** PROM item answers, instrument versions, chat and follow-up evidence can be linked by patient identifier and time. The proposed hospital extension adds medication, allergies, laboratory results and episodes; unavailable hospital information is represented by clearly labelled synthetic examples, not invented facts presented as real history.
+**Longitudinal context.** PROM item answers, instrument versions, chat and follow-up evidence can be linked by patient identifier and time. The newly supplied registry capture shows historical PROM evidence becoming optional interview topics. The hospital extension adds medication, allergies, laboratory results and episodes through clearly labelled synthetic scenarios.
+
+![Synthetic medication and allergy context provides issues to clarify during the interview](screenshots/R11-medication-and-allergies.png)
+
+For example, a recorded prescription does not establish how the person actually takes it. A reported rash does not establish a confirmed allergy. These distinctions create useful refinements for the pharmacist and preserve the meaning needed by a future openEHR mapping.
 
 **Semantic retrieval.** Atlas Search, Voyage embeddings, vector retrieval and reranking have been exercised on a small synthetic, author-judged bilingual reference set. Their role is to find candidate evidence across different wording. Retrieval is not clinical interpretation, and absent-evidence queries still need a qualified abstention policy. The screenshot of search controls alone does not establish retrieval quality.
 
-**Comparable pathways.** The prototype explores aligned prior trajectories, respecting instrument/version and coverage, rather than matching only a single score. Later observations are kept out of the matching inputs. Such comparisons can suggest a topic for discussion; they do not establish treatment effects or predict this patient's answer. The submitted pathway capture shows the explicit no-match state.
+**Comparable pathways.** The prototype explores aligned prior trajectories, respecting instrument/version and coverage, rather than matching only a single score. Later observations are kept out of the matching inputs. Such comparisons can suggest a topic for discussion; they do not establish treatment effects or predict this patient's answer. The new captures show both populated suggestions and an inspectable comparison; the earlier no-match example is retained in the gallery.
 
-**Traceable persistence.** Atlas stores knowledge assets, evidence, encounter drafts, confirmations and decision traces. A separate MongoDB Agent Engine integration is not connected in this submission. Optional heard-answer proposals also require confirmation; click-based entry is the primary demonstration.
+![Comparable pathways suggest optional questions and expose follow-up availability](screenshots/R05-learning-from-similar-pathways.png)
+
+The displayed **5/20** is the number of compared people with later observations, not a treatment success rate. The useful output is a possible question to explore, with its evidence and denominator visible.
+
+![Inspect an aligned feature and the availability of later observations](screenshots/R14b-pathway-comparison-chart.png)
+
+The comparison exposes the underlying trajectories and their observation windows. This selected comparator has no later observation in the shown follow-up window; that absence must not be presented as a favourable outcome.
+
+**Traceable persistence.** Atlas stores knowledge assets, evidence, encounter drafts, confirmations and decision traces. The [“one interview, many histories” explanation](screenshots/R17-one-interview-many-histories.png) makes the mapping, matching and recording boundaries visible to the user. A separate MongoDB Agent Engine integration is not connected in this submission. Optional heard-answer proposals also require confirmation; click-based entry is the primary demonstration.
 
 ## What we would qualify next
 
@@ -116,4 +130,4 @@ The reusable contribution is the **versioned contract between meaning, available
 - [Alan Rector interview, part 4: concepts and archetype-sized fragments](https://pen-pad-revival.github.io/interviews/alan-rector-part-4/)
 - [OpenGALEN browser source and documentation](https://github.com/erik-sundvalls-bots/opengalen-browser)
 
-This PR contains the English briefing, screenshots and a synthetic technical example. It does not publish patient-level source exports, credentials, the application's source code, or a publicly hosted live service. Contact the contributor for a walkthrough.
+This PR contains the English briefing, selected screenshots and a synthetic technical example. The registry screenshots show selected historical values under pseudonymous identifiers; original CSVs, chat exports, credentials and application source code are not included. There is no publicly hosted live service in this submission. Contact the contributor for a walkthrough.

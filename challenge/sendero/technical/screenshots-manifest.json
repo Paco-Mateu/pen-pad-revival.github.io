@@ -73,5 +73,30 @@
     "file": "screenshots/14b-research-similar-pathways.png",
     "sha256": "89f18ebacf870085f832f75ea03dbfceb602bcaeed11596f2840195cc206c89a",
     "bytes": 291220
+  },
+  {
+    "file": "screenshots/R03-prepare-interview-evidence.png",
+    "sha256": "b236c49e7e46157ba3cf9a0ed0126640559f7cecc78c9f62877acbfe9acb8d48",
+    "bytes": 403842
+  },
+  {
+    "file": "screenshots/R05-learning-from-similar-pathways.png",
+    "sha256": "26ab99ed1f93001e850a2d526e46cc1c1adafdbb5dc5287fe1dade0ea27c9fec",
+    "bytes": 515029
+  },
+  {
+    "file": "screenshots/R11-medication-and-allergies.png",
+    "sha256": "5a8c8115bc7c81662327e464c3cc23d0a8821c8b5412d2e885a0c0029f745d8b",
+    "bytes": 422175
+  },
+  {
+    "file": "screenshots/R14b-pathway-comparison-chart.png",
+    "sha256": "812672c93af0a26cd9c96ab2d49e12487f432f569d8eb1a6e5891986e398e488",
+    "bytes": 396518
+  },
+  {
+    "file": "screenshots/R17-one-interview-many-histories.png",
+    "sha256": "fdeb7f64e8b8e63b72cdb6467a69eef90e1f8b916fbad038a9a1df6148e85307",
+    "bytes": 463475
   }
 ]
