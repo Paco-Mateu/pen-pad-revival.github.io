@@ -1,0 +1,77 @@
+[
+  {
+    "file": "screenshots/01-patient-list.png",
+    "sha256": "62b793b6b664b83fdb5b5cb9267b366311e1de1086f128877308b11b44353ef2",
+    "bytes": 212111
+  },
+  {
+    "file": "screenshots/02-history-and-proms.png",
+    "sha256": "e6bdf4a9c944c7dcbe32c4d3f0a4e1eef6c1912093a08be73d8f999a5a0c4458",
+    "bytes": 337532
+  },
+  {
+    "file": "screenshots/03-guided-first-question.png",
+    "sha256": "c66103abe6162f4415151824ae2dc21e921665fe275ee6417b1ff35a2eeeb789",
+    "bytes": 458765
+  },
+  {
+    "file": "screenshots/04-evidence-and-follow-up.png",
+    "sha256": "e2a83c97a4df6832ba661158b2986149064c2fc8f183aa9c76fa960e9f2be414",
+    "bytes": 445537
+  },
+  {
+    "file": "screenshots/05-deeper-pathway.png",
+    "sha256": "b5098e970b4afc3cd9f50ce30c2a93ae9c168c255de62e5b45c1aab57776a1ff",
+    "bytes": 473443
+  },
+  {
+    "file": "screenshots/06-likely-answers-medication.png",
+    "sha256": "135b23f7a835423a2f71b476823d418761c56e432aa9bfb2c7abd7f73ebe902f",
+    "bytes": 493124
+  },
+  {
+    "file": "screenshots/07-body-map.png",
+    "sha256": "7cc45584d5c714883e082fd868f10de2558add535ac3d679d2b4d76e380bea85",
+    "bytes": 456493
+  },
+  {
+    "file": "screenshots/09-review-and-confirm.png",
+    "sha256": "592d7b918053947f1be3f6a278e63da493b51d841fa72be0c37e5ddf7c32c2c7",
+    "bytes": 607076
+  },
+  {
+    "file": "screenshots/10-evidence-similar-pathways.png",
+    "sha256": "166ddbdb139c7fdebf320d3b69b8a4d184444efab557b88ce82c718e8f70e2f2",
+    "bytes": 428888
+  },
+  {
+    "file": "screenshots/11-clinical-record.png",
+    "sha256": "ad8381e6e4597ba3ba9b18ff3941b41117b71fe13646ad47e1ebc488d07930ed",
+    "bytes": 328920
+  },
+  {
+    "file": "screenshots/12-ontology-graph.png",
+    "sha256": "9a045a8af8c5de43766efef6f807ed610680ea81a65b20e91a45be90a30934a7",
+    "bytes": 395014
+  },
+  {
+    "file": "screenshots/13-ontology-node-detail.png",
+    "sha256": "48afe1c65bc0c60428c3dce1edd8e45e527a6818d9116ed32488b78a95768d53",
+    "bytes": 451522
+  },
+  {
+    "file": "screenshots/13b-ontology-with-layers.png",
+    "sha256": "994c40471a5bf9a6e68b9c6e43361bbf71c4912abfc8a4082788896c15ef3d3a",
+    "bytes": 466264
+  },
+  {
+    "file": "screenshots/14-research-pathways.png",
+    "sha256": "df11c1a4f1e5e6e3aca67b45b96786d6ccd3fc8e5d5b96e712b7b66c97e00bac",
+    "bytes": 297122
+  },
+  {
+    "file": "screenshots/14b-research-similar-pathways.png",
+    "sha256": "89f18ebacf870085f832f75ea03dbfceb602bcaeed11596f2840195cc206c89a",
+    "bytes": 291220
+  }
+]
