@@ -6,46 +6,74 @@
 
 **Contact:** [francesc.mateu@mongodb.com](mailto:francesc.mateu@mongodb.com) · [GitHub: Paco-Mateu](https://github.com/Paco-Mateu)
 
-Sendero explores a contemporary PEN&PAD-style interaction: **target a clinical concern, refine its meaning through appropriate choices, and confirm a readable account before recording it**. Its clinical setting is a pharmacist's conversation with a person living with HIV, informed by patient-reported outcome measures (PROMs), previous conversations and follow-up assessments.
+A person arrives at the pharmacy to renew their HIV medication. Their PROM answers, earlier conversations and follow-up history already contain useful context. The pharmacist needs to understand what matters **today**, explore it naturally, and leave a record that preserves what was actually said and agreed.
 
-The contribution is a working research prototype and a documented bridge between a concept model, reusable assessment fragments and openEHR information structures. It is motivated by the NAVETA/Visionarium project. The interface is branded “Sendero by MongoDB”; this is an experimental prototype, not an officially released MongoDB product.
+**Sendero brings that context into a PEN&PAD-style consultation: target a concern, offer meaningful refinements, keep the developing account visible, and review it before confirmation.** Historical evidence helps the pharmacist choose what to explore. A versioned concept-and-fragment model supplies the available descriptions. openEHR provides the intended information structures for the resulting clinical record.
 
-![Historical PROM evidence opens optional interview topics](screenshots/R03-prepare-interview-evidence.png)
+The contribution is a working research prototype motivated by the NAVETA/Visionarium HIV project. Its interface is branded “Sendero by MongoDB”; it is not an officially released MongoDB product. The next step is a pilot with a pharmacist to assess practicality, semantic fidelity and what needs improving.
 
-**From history to a better conversation.** In this returning-person view, reported changes in anxiety, mood and stigma lead to relevant questions. Each card offers **Explore**, **Later** and **Not relevant**. Context helps target the assessment; the professional still chooses the direction, and the patient's answer remains to be elicited.
+![A medication question combines the chosen priority, earlier responses, comparable-pathway context and a separate clinical history panel](screenshots/full-consultation/07-likely-answers-and-last-report.png)
 
-## The PEN&PAD connection
+This screen captures the central idea. The person has chosen **Review treatment**. The pharmacist sees a question about omitted doses, the last reported answer, the distribution of earlier responses and a reason to explore the topic from comparable pathways. These are different kinds of evidence: none supplies today's answer. The middle column contains today's developing account; the right-hand panel holds earlier context and a clearly labelled synthetic hospital scenario.
 
-The [PEN&PAD revival](https://pen-pad-revival.github.io/) and [Clinergy thumb-pain walkthrough](https://pen-pad-revival.github.io/docs/clinergy-thumb-pain-demo/) suggested something more useful than another electronic questionnaire: select an appropriate description, expose meaningful refinements, retain the developing statement, and let the professional decide how far to explore.
+## Walk through a complete consultation
 
-| PEN&PAD principle | Sendero implementation |
+The selected sequence follows the same pseudonymous person through the interview and related history views. The source folder also contains preparation images for another identifier; those have not been spliced into this sequence. Historical PROM values are imported evidence, the on-screen interview selections demonstrate the workflow, and hospital facts are explicitly synthetic. The screenshots do not document a prospectively evaluated clinical encounter.
+
+**1. Start with the person's priority and keep other topics available.** The [opening screen](screenshots/full-consultation/06-guided-first-question.png) offers treatment, rest, activities and emotional wellbeing. Guided mode makes a next step easy; the topic tabs and All topics option preserve freedom to change direction. A new patient can use the same fragments with no prior evidence.
+
+**2. Look behind a score or a previous answer.** “Show full PROM history” opens the supporting material inside the interview, rather than sending the pharmacist to a disconnected dashboard.
+
+![Earlier item answers and a reported score are available inline, with dates and version status](screenshots/full-consultation/08-full-prom-history-inline.png)
+
+This is where semantic understanding becomes useful. A reported convenience score, a general answer about forgetting medication, and an answer about missed doses in a specific recall period are related but not interchangeable. Sendero keeps the item wording, date and version status visible. The pharmacist can clarify apparent tensions instead of reducing everything to one adherence label. A displayed definition-version mismatch remains unresolved until reviewed.
+
+**3. Follow the conversation across topics and into detail.** After discussing medication, the pharmacist can [explore emotional wellbeing](screenshots/full-consultation/09-follow-up-question.png), locate a [physical concern on a body map](screenshots/full-consultation/11-body-map.png), or examine sleep. The account retains the other selected answers.
+
+![A sleep concern opens duration choices while the account and wider history remain visible](screenshots/full-consultation/15-interview-with-history-panel.png)
+
+Here, **Difficulty resting** leads to duration choices while medication, mood and physical concerns remain in view. This is the PEN&PAD refinement mechanism: a selected meaning exposes appropriate further descriptions. The professional chooses the depth and can leave a detail unanswered. Negative, unknown, declined and unanswered states remain distinct. Correcting a parent answer removes incompatible descendants from the active draft while retaining the change in its trace.
+
+Click-based entry is the primary interaction. Optional speech-derived proposals need explicit acceptance before entering the account; speaker selection is manual, and browser speech processing may use the browser vendor's service. The screenshot is evidence of the interface state, not a measurement of recognition accuracy.
+
+**4. Review what this consultation has recorded.** The readable account and structured draft use the same selected answers. The professional can correct them before confirming the intended version.
+
+![Review the selected meanings before confirming the encounter snapshot](screenshots/full-consultation/13-review-and-confirm.png)
+
+The visible **mapping draft** status matters: confirming an encounter snapshot is separate from qualifying its openEHR mapping. This capture shows the review step, not a successful clinical CDR submission. The bounded technical example below demonstrates that separate validation path.
+
+## One interview benefits from many histories
+
+The [evidence panel](screenshots/full-consultation/14-evidence-during-interview.png) remains available during the interview. A change in a reported score can suggest an optional topic, with Explore or Revisit topic, Later and Not relevant controls. An old score remains an old score; it is not silently treated as the person's current state.
+
+Comparable pathways add another source of questions. Matching uses earlier observations of the same instrument, field and version, with coverage and observed duration made explicit. Later observations are examined separately to suggest areas worth asking about. For example, the medication screen reports later observations in that area for **5 of 20** displayed comparable pathways. That is follow-up availability, not a treatment success rate or the probability of this person's answer.
+
+![Inspect a shared feature over time and distinguish matching evidence from subsequent observations](screenshots/full-consultation/21-pathway-comparison.png)
+
+The comparison exposes the trajectories, index-relative time and underlying summary values. The selected comparator has no later observation in the displayed 180-day window. That absence is not improvement. These exploratory comparisons help identify a possible question; they do not establish causation, treatment effects or a prediction.
+
+The [wider clinical record](screenshots/full-consultation/18-clinical-record.png) illustrates how medication, reported reactions, hospital episodes and laboratory results can provide additional context. Its hospital scenario is explicitly synthetic and does not connect to a live hospital EHR. A prescription is different from actual use; a reported reaction is different from a verified allergy. Those distinctions need to survive both the conversation and the eventual record mapping.
+
+## Why this belongs in the PEN&PAD bonus track
+
+The [Clinergy walkthrough](https://pen-pad-revival.github.io/docs/clinergy-thumb-pain-demo/) and [Alan Rector's discussion of concepts and archetype-sized fragments](https://pen-pad-revival.github.io/interviews/alan-rector-part-4/) informed the design. The reusable mechanism is the connection from a clinical meaning to appropriate recording fragments, further refinements and a reviewable account.
+
+| PEN&PAD principle | What the prototype demonstrates |
 |---|---|
-| Target the concern | Enter through a topic, a physical location, or an item of evidence. A new patient can start without prior history. |
-| Select relevant recording structure | Versioned assessment types select reusable question fragments. Combined types inherit fragments from multiple parents, with shared fragments included once. |
-| Refine progressively | Answer buttons and “More…” details expose duration, pattern, impact or circumstances as appropriate. The path and existing answers remain visible. |
-| Preserve clinical freedom | Guided mode offers a next step; other topics remain available. The pharmacist can change direction, defer a question, or use the broader assessment view. |
-| Review the meaning | A readable account is generated from the selected answers. Negative, unknown, declined and unanswered states remain distinct. |
-| Confirm before recording | Draft answers are reviewed and confirmed as a versioned snapshot. Candidate mappings are visibly distinguished from qualified clinical records. |
+| Target a concern | Enter through a priority, topic, evidence card or physical location. |
+| Compose relevant recording structure | Versioned assessment types select reusable fragments; combined types inherit shared fragments once. |
+| Refine the meaning | Answer-dependent details retain the parent statement and the developing account. |
+| Preserve professional control | Suggested questions coexist with other topics, deferral and correction. |
+| Confirm the intended statement | Review the same selected meanings before confirming a versioned snapshot. |
 
-This is an adaptation of the interaction and modelling principles. We did not copy Clinergy assets, OpenGALEN terminology data or the OpenGALEN browser code, and we have not reproduced its formal classifier.
+The [OpenGALEN browser](https://erik-sundvalls-bots.github.io/opengalen-browser/#concept=Asthma) inspired a layered, general-to-specific graph with multiple parent paths.
 
-## A short demonstration
+![The combined sleep-and-medication assessment connects its parent paths to reusable fragments](screenshots/full-consultation/22-ontology-graph.png)
 
-1. **Open a person by identifier**, or start a new encounter. Existing evidence belongs to that same person; it is not substituted with another patient's history.
-2. **Ask what matters today.** Choose rest, treatment, activities or emotional wellbeing. The pharmacist can move to another topic at any point.
-3. **Follow the meaning deeper.** Selecting difficulty sleeping opens relevant details such as duration and impact. A concern about daily routine can lead into medication-taking circumstances without restarting the assessment.
-4. **Consult evidence alongside the conversation.** Charts and source cards provide context. An older answer is evidence to discuss, not an answer automatically carried into today's interview.
-5. **Correct a statement.** Changing a parent answer removes incompatible descendant answers from the active draft while retaining the change in its trace.
-6. **Review and confirm.** Read the accumulated account, correct it, and confirm the intended version. Confirmation of the interview is distinct from certification of its openEHR mapping.
-7. **Inspect the model.** Open the ontology browser to see the assessment's ancestor paths, reusable fragments and candidate record bindings.
-
-![Progressive refinement of a sleep concern](screenshots/05-deeper-pathway.png)
-
-![Readable review before confirmation; the mapping-draft status is explicit](screenshots/09-review-and-confirm.png)
-
-The screenshots cover two complementary situations: the earlier new-patient demonstration and the newly supplied registry views with historical PROM evidence under pseudonymous identifiers. Hospital records marked synthetic are authored scenarios, separate from the imported PROM history. Earlier empty-history and no-match captures remain in the [annotated gallery](gallery.md) as examples of those states; they do not describe every patient or the whole dataset.
+The graph exposes the model behind the interface. Hierarchy, form refinements, source mappings and cohort associations are distinct relationships. A cohort association cannot create a subtype or a confirmed patient fact. This is an authored local assessment ontology, not the full SNOMED CT ontology or a live OpenGALEN/GRAIL classifier. We adapted the principles without copying Clinergy assets, OpenGALEN terminology data or its browser code.
 
 ## Four models, with explicit connections
+
 
 The ontology is not the patient's record, and a terminology code is not a complete clinical statement.
 
@@ -81,53 +109,26 @@ See the [technical note, validation result and round-trip record](technical/read
 
 For a complete clinical interview, entry types must follow the meaning of the information: a reported measurement may be an `OBSERVATION`, an assessment an `EVALUATION`, and a plan or performed activity may need `INSTRUCTION` or `ACTION` structures. We do not force every answer into an observation or generate arbitrary templates from conversation.
 
-## An inspectable ontology, inspired by OpenGALEN
+## How the technology supports the consultation
 
-The [OpenGALEN browser](https://erik-sundvalls-bots.github.io/opengalen-browser/#concept=Asthma) informed a **layered, general-to-specific graph**. It shows paths through a directed acyclic hierarchy, including multiple parents, rather than arranging concepts in a circle.
+**MongoDB Atlas** stores knowledge assets, patient evidence, encounter drafts, confirmations and decision traces. Source-linked projections connect question/answer meaning to interview topics while retaining instrument identity, dates and review status. The [“one interview, many histories” explanation](screenshots/full-consultation/24-one-interview-many-histories.png) makes this mechanism inspectable. Its displayed counts describe the loaded projection, not the prospective Visionarium pilot sample.
 
-![Assessment hierarchy with converging parent paths](screenshots/12-ontology-graph.png)
+**Search and retrieval** help find candidate evidence across wording. Historical real-text search currently uses lexical and authored-concept matching. Atlas Search, Voyage embeddings, vector retrieval, hybrid search and reranking have also been exercised on a small synthetic, author-judged bilingual reference set. This is engineering evidence, not clinical validation; absent-evidence queries still need a qualified abstention policy. Neither semantic similarity nor a high retrieval score establishes a clinical fact.
 
-Selecting an assessment type exposes its parents, children and fragments. Optional layers show form refinements and source/record mappings with distinct relationship types. For example, a combined sleep-and-medication assessment can reuse both sets of fragments without duplicating a shared question.
+**Terminology and agents** have explicit boundaries. Edition-specific SNOMED CT bindings, a live terminology reasoner and the separate MongoDB Agent Engine integration remain pending. The prototype does not extract a clinically approved ontology from raw conversations or automatically promote observed cohort associations into clinical rules.
 
-The [fragment-and-mapping overlay](screenshots/13b-ontology-with-layers.png) shows the links separately from the hierarchy.
+## What we will learn in the pharmacist pilot
 
-This is an explicitly authored local assessment ontology and a searchable knowledge catalogue, not the full SNOMED CT ontology or an OpenGALEN/GRAIL reasoner. SNOMED CT is a candidate terminology foundation; live, edition-specific terminology qualification remains future work. Empirical cohort relationships do not participate in classification.
+The planned NAVETA/Visionarium pilot will examine whether this interaction is practical in medication-renewal interviews: whether it surfaces relevant context, captures the intended meaning, permits natural topic changes and reduces correction or documentation burden. Interview time, useful details captured, missed details and the usefulness of suggestions are appropriate initial measures. Improved clinical outcomes have not been demonstrated.
 
-## What the contemporary extensions add
+The next interoperability step is a pharmacist-reviewed set of fragments connected to clinically reviewed openEHR templates and current terminology bindings, followed by an external CDR round-trip. The reusable contribution is the **versioned contract between meaning, evidence, available refinements and a confirmed record**.
 
-**Longitudinal context.** PROM item answers, instrument versions, chat and follow-up evidence can be linked by patient identifier and time. The newly supplied registry capture shows historical PROM evidence becoming optional interview topics. The hospital extension adds medication, allergies, laboratory results and episodes through clearly labelled synthetic scenarios.
+## Submission contents
 
-![Synthetic medication and allergy context provides issues to clarify during the interview](screenshots/R11-medication-and-allergies.png)
-
-For example, a recorded prescription does not establish how the person actually takes it. A reported rash does not establish a confirmed allergy. These distinctions create useful refinements for the pharmacist and preserve the meaning needed by a future openEHR mapping.
-
-**Semantic retrieval.** Atlas Search, Voyage embeddings, vector retrieval and reranking have been exercised on a small synthetic, author-judged bilingual reference set. Their role is to find candidate evidence across different wording. Retrieval is not clinical interpretation, and absent-evidence queries still need a qualified abstention policy. The screenshot of search controls alone does not establish retrieval quality.
-
-**Comparable pathways.** The prototype explores aligned prior trajectories, respecting instrument/version and coverage, rather than matching only a single score. Later observations are kept out of the matching inputs. Such comparisons can suggest a topic for discussion; they do not establish treatment effects or predict this patient's answer. The new captures show both populated suggestions and an inspectable comparison; the earlier no-match example is retained in the gallery.
-
-![Comparable pathways suggest optional questions and expose follow-up availability](screenshots/R05-learning-from-similar-pathways.png)
-
-The displayed **5/20** is the number of compared people with later observations, not a treatment success rate. The useful output is a possible question to explore, with its evidence and denominator visible.
-
-![Inspect an aligned feature and the availability of later observations](screenshots/R14b-pathway-comparison-chart.png)
-
-The comparison exposes the underlying trajectories and their observation windows. This selected comparator has no later observation in the shown follow-up window; that absence must not be presented as a favourable outcome.
-
-**Traceable persistence.** Atlas stores knowledge assets, evidence, encounter drafts, confirmations and decision traces. The [“one interview, many histories” explanation](screenshots/R17-one-interview-many-histories.png) makes the mapping, matching and recording boundaries visible to the user. A separate MongoDB Agent Engine integration is not connected in this submission. Optional heard-answer proposals also require confirmation; click-based entry is the primary demonstration.
-
-## What we would qualify next
-
-The next useful step is a pharmacist-reviewed subset connecting a few assessment fragments to clinically reviewed openEHR templates and current terminology bindings, followed by an external CDR round-trip. For Visionarium, evaluation should measure semantic fidelity, relevant details captured, correction burden, interview time and the usefulness of suggested topics. Improved clinical outcomes have not been demonstrated.
-
-The reusable contribution is the **versioned contract between meaning, available refinements, evidence and a confirmed record**. It can support other clinical settings without treating every workflow as a fixed sequence of screens.
-
-## Submission contents and references
-
-- [Annotated screenshots](gallery.md)
-- [Synthetic openEHR example and technical evidence](technical/readme.md)
+- [Full consultation walkthrough and image captions](gallery.md)
+- [Synthetic openEHR example and technical validation evidence](technical/readme.md)
+- [Earlier screenshots and empty-state examples](earlier-gallery.md)
 - [PEN&PAD revival portal](https://pen-pad-revival.github.io/)
-- [Clinergy demonstration](https://pen-pad-revival.github.io/docs/clinergy-thumb-pain-demo/)
-- [Alan Rector interview, part 4: concepts and archetype-sized fragments](https://pen-pad-revival.github.io/interviews/alan-rector-part-4/)
 - [OpenGALEN browser source and documentation](https://github.com/erik-sundvalls-bots/opengalen-browser)
 
-This PR contains the English briefing, selected screenshots and a synthetic technical example. The registry screenshots show selected historical values under pseudonymous identifiers; original CSVs, chat exports, credentials and application source code are not included. There is no publicly hosted live service in this submission. Contact the contributor for a walkthrough.
+The briefing and captions are in English. Some source instrument names and metadata in the English interface retain their original language. Selected historical values appear under pseudonymous identifiers; original CSVs, readable chat exports, credentials and application source code are not included. Chat text is blurred in the supplied inline-history image. There is no publicly hosted live service in this submission; contact the contributor for a walkthrough.

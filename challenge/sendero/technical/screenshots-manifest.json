@@ -98,5 +98,65 @@
     "file": "screenshots/R17-one-interview-many-histories.png",
     "sha256": "fdeb7f64e8b8e63b72cdb6467a69eef90e1f8b916fbad038a9a1df6148e85307",
     "bytes": 463475
+  },
+  {
+    "file": "screenshots/full-consultation/06-guided-first-question.png",
+    "sha256": "981b6d87af473c30e516fd3c51dc7bfba9930e17b336a2aa4ed038491a3b6eab",
+    "bytes": 523075
+  },
+  {
+    "file": "screenshots/full-consultation/07-likely-answers-and-last-report.png",
+    "sha256": "f431a18b8d34a9f68df68add04b5512f416a7ed8e6f08acf3b9de9c6a8550a20",
+    "bytes": 530484
+  },
+  {
+    "file": "screenshots/full-consultation/08-full-prom-history-inline.png",
+    "sha256": "e0f4697cb944695d3d6dae6c1aefa482306495ef5e4108b2b483b58b2d2669bb",
+    "bytes": 555852
+  },
+  {
+    "file": "screenshots/full-consultation/09-follow-up-question.png",
+    "sha256": "e175614dd8d3c0a9a898117d25d240ad2a273ae2311408d1c83102446a9de282",
+    "bytes": 524617
+  },
+  {
+    "file": "screenshots/full-consultation/11-body-map.png",
+    "sha256": "8a52246ff0010a9b08d84506b3329f217a4dd38654fce0836a95630c4d23d087",
+    "bytes": 534268
+  },
+  {
+    "file": "screenshots/full-consultation/13-review-and-confirm.png",
+    "sha256": "e333fd5e8c1922c8cf8b19f4c7f5f7a1852feee17c94c215ce32295b1bcc1139",
+    "bytes": 839730
+  },
+  {
+    "file": "screenshots/full-consultation/14-evidence-during-interview.png",
+    "sha256": "c10d64ea5b403b9259bcf3ea81bd1efc24535904501d3ba9cbbe8ae5a683de77",
+    "bytes": 427151
+  },
+  {
+    "file": "screenshots/full-consultation/15-interview-with-history-panel.png",
+    "sha256": "b51dd9129248236a357a67ddbaaad726ae7047e2deca2fc66c0b8452405f90a3",
+    "bytes": 591973
+  },
+  {
+    "file": "screenshots/full-consultation/18-clinical-record.png",
+    "sha256": "689cff97ed930f459e2966c28e30a56e3d437c12094cc14c2aed005522a1e4ff",
+    "bytes": 389999
+  },
+  {
+    "file": "screenshots/full-consultation/21-pathway-comparison.png",
+    "sha256": "d4b9a5f0b3bf9735e6d661bd6976bfde7bb3d5a6ec5f7204c3d9b6b322fe0356",
+    "bytes": 396536
+  },
+  {
+    "file": "screenshots/full-consultation/22-ontology-graph.png",
+    "sha256": "df47291f5efb04b4c66e0d053115b96235ce48e237a92004904500e7864a9664",
+    "bytes": 408348
+  },
+  {
+    "file": "screenshots/full-consultation/24-one-interview-many-histories.png",
+    "sha256": "efec5834e357dbe0488fb13ddff98589eeab4a30ccab3a7d97100d006dcdcb12",
+    "bytes": 463158
   }
 ]
