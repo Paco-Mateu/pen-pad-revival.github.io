@@ -32,7 +32,7 @@ The same reported feature is plotted relative to each index assessment, with bas
 
 ### Make the mechanism and its limits inspectable
 
-The explanation connects source-linked history, versioned semantic mappings, optional interview topics, earlier-pathway matching and separate follow-up windows. Displayed counts describe the loaded projection at capture time, not the Visionarium pilot sample. The panel also separates running capabilities from pending Agent Engine, terminology and native openEHR publication work.
+The explanation connects source-linked history, versioned semantic mappings, optional interview topics, earlier-pathway matching and separate follow-up windows. Displayed counts describe the loaded projection at capture time, not a prospective pilot sample. The panel also separates running capabilities from pending Agent Engine, terminology and native openEHR publication work.
 
 ![Make the mechanism and its limits inspectable](screenshots/R17-one-interview-many-histories.png)
 

@@ -2,7 +2,7 @@
 
 [Return to the briefing](readme.md)
 
-Selected captures from the supplied “full-consultation” folder, captured on 20 November 2026. The interview and history views below follow the same pseudonymous person. Interview selections demonstrate the workflow; imported PROM history, today's draft and authored hospital scenarios have different provenance. Preparation images for a different identifier are not part of this sequence. All captions are in English; some original instrument labels and metadata remain in their source language.
+Selected captures from the supplied “full-consultation” folder, captured on 20 November 2026. The interview and history views below follow the same pseudonymous person. The historical PROM responses are real data from the collaboration with a hospital pharmacy team using NAVETA. No real HIS data was used: the hospital context was generated synthetically. Today's interview selections demonstrate the workflow and are distinct from both the real PROM history and the synthetic hospital scenarios. Preparation images for a different identifier are not part of this sequence. All captions are in English; some original instrument labels and metadata remain in their source language.
 
 ## 1. Begin with the person's priority
 
@@ -72,7 +72,7 @@ The layered graph shows a combined sleep-and-medication assessment, its parent p
 
 ## 12. Explain how the parts work together
 
-The knowledge explanation connects source-linked history, versioned mappings, optional questions, earlier-pathway matching, follow-up windows and reusable assessment fragments. Counts describe the loaded projection at capture time, not the prospective Visionarium pilot sample. Running and pending capabilities are distinguished.
+The knowledge explanation connects source-linked history, versioned mappings, optional questions, earlier-pathway matching, follow-up windows and reusable assessment fragments. Counts describe the loaded projection at capture time, not a prospective pilot sample. Running and pending capabilities are distinguished.
 
 ![Explain how the parts work together](screenshots/full-consultation/24-one-interview-many-histories.png)
 

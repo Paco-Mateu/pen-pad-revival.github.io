@@ -6,11 +6,25 @@
 
 **Contact:** [francesc.mateu@mongodb.com](mailto:francesc.mateu@mongodb.com) · [GitHub: Paco-Mateu](https://github.com/Paco-Mateu)
 
-A person arrives at the pharmacy to renew their HIV medication. Their PROM answers, earlier conversations and follow-up history already contain useful context. The pharmacist needs to understand what matters **today**, explore it naturally, and leave a record that preserves what was actually said and agreed.
+A person arrives at the pharmacy to renew their HIV medication. Their earlier patient-reported outcome measure (PROM) responses already contain useful context. The pharmacist needs to understand what matters **today**, explore it naturally, and leave a record that preserves what was actually said and agreed.
 
 **Sendero brings that context into a PEN&PAD-style consultation: target a concern, offer meaningful refinements, keep the developing account visible, and review it before confirmation.** Historical evidence helps the pharmacist choose what to explore. A versioned concept-and-fragment model supplies the available descriptions. openEHR provides the intended information structures for the resulting clinical record.
 
-The contribution is a working research prototype motivated by the NAVETA/Visionarium HIV project. Its interface is branded “Sendero by MongoDB”; it is not an officially released MongoDB product. The next step is a pilot with a pharmacist to assess practicality, semantic fidelity and what needs improving.
+The prototype comes from a collaboration with a **hospital pharmacy team using NAVETA** to collect patient-reported questionnaires. **The historical PROM responses are real, not generated for the demonstration.** They provide the foundation for exploring how earlier answers and reported changes can support a more useful interview.
+
+The loaded semantic projection shown in the demonstration contains:
+
+| Historical PROM data | Count |
+|---|---:|
+| Source-linked score observations | 24,009 |
+| Selected questionnaire item answers | 10,185 |
+| Patients with score history | 1,282 |
+
+These figures describe the loaded projection at capture time. They distinguish repeated observations and selected answers from distinct patients; they are not the size of a prospective pilot or a claim that every source item has been clinically reconciled.
+
+**No real hospital information system (HIS) data was used for the wider clinical context.** Medication, allergies, admissions and laboratory results were generated synthetically to extend the real PROM foundation and demonstrate how future hospital integration could inform the same consultation. These scenarios remain explicitly labelled and do not establish clinical facts about the people whose PROM history is shown. Today's on-screen interview selections are demonstration inputs; the real source data underpinning this submission are the historical PROM records.
+
+Its interface is branded “Sendero by MongoDB”; it is not an officially released MongoDB product. The next step is a pilot with a pharmacist to assess practicality, semantic fidelity and what needs improving.
 
 ![A medication question combines the chosen priority, earlier responses, comparable-pathway context and a separate clinical history panel](screenshots/full-consultation/07-likely-answers-and-last-report.png)
 
@@ -111,7 +125,7 @@ For a complete clinical interview, entry types must follow the meaning of the in
 
 ## How the technology supports the consultation
 
-**MongoDB Atlas** stores knowledge assets, patient evidence, encounter drafts, confirmations and decision traces. Source-linked projections connect question/answer meaning to interview topics while retaining instrument identity, dates and review status. The [“one interview, many histories” explanation](screenshots/full-consultation/24-one-interview-many-histories.png) makes this mechanism inspectable. Its displayed counts describe the loaded projection, not the prospective Visionarium pilot sample.
+**MongoDB Atlas** stores knowledge assets, patient evidence, encounter drafts, confirmations and decision traces. Source-linked projections connect question/answer meaning to interview topics while retaining instrument identity, dates and review status. The [“one interview, many histories” explanation](screenshots/full-consultation/24-one-interview-many-histories.png) makes this mechanism inspectable. Its displayed counts describe the historical PROM projection summarised above, not a prospective pilot sample.
 
 **Search and retrieval** help find candidate evidence across wording. Historical real-text search currently uses lexical and authored-concept matching. Atlas Search, Voyage embeddings, vector retrieval, hybrid search and reranking have also been exercised on a small synthetic, author-judged bilingual reference set. This is engineering evidence, not clinical validation; absent-evidence queries still need a qualified abstention policy. Neither semantic similarity nor a high retrieval score establishes a clinical fact.
 
@@ -119,7 +133,7 @@ For a complete clinical interview, entry types must follow the meaning of the in
 
 ## What we will learn in the pharmacist pilot
 
-The planned NAVETA/Visionarium pilot will examine whether this interaction is practical in medication-renewal interviews: whether it surfaces relevant context, captures the intended meaning, permits natural topic changes and reduces correction or documentation burden. Interview time, useful details captured, missed details and the usefulness of suggestions are appropriate initial measures. Improved clinical outcomes have not been demonstrated.
+The planned pilot with the hospital pharmacy team will examine whether this interaction is practical in medication-renewal interviews: whether it surfaces relevant context, captures the intended meaning, permits natural topic changes and reduces correction or documentation burden. Interview time, useful details captured, missed details and the usefulness of suggestions are appropriate initial measures. Improved clinical outcomes have not been demonstrated.
 
 The next interoperability step is a pharmacist-reviewed set of fragments connected to clinically reviewed openEHR templates and current terminology bindings, followed by an external CDR round-trip. The reusable contribution is the **versioned contract between meaning, evidence, available refinements and a confirmed record**.
 
